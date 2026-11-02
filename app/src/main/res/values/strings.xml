@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name" translatable="false">Slap</string>
+  <string name="share_label">Create sticker</string>
+
+  <!-- common -->
+  <string name="save">Save</string>
+  <string name="cancel">Cancel</string>
+  <string name="create">Create</string>
+  <string name="delete">Delete</string>
+  <string name="ok">OK</string>
+  <string name="error_generic">Error: %1$s</string>
+  <string name="whatsapp_chooser">Add to WhatsApp</string>
+
+  <!-- AI cutout -->
+  <string name="ai_play_unavailable">Google Play is unavailable: %1$s</string>
+  <string name="ai_downloading">Downloading the AI cutout from Google Play (first time only)…</string>
+  <string name="ai_downloading_pct">Downloading the AI cutout: %1$d%%</string>
+  <string name="ai_download_failed_code">Couldn\'t download the AI cutout (code %1$d)</string>
+  <string name="ai_download_failed">Couldn\'t download the AI cutout: %1$s</string>
+  <string name="ai_nothing_found">No subject found in the image</string>
+  <string name="ai_failed">The AI cutout failed: %1$s</string>
+
+  <!-- home -->
+  <string name="home_subtitle">WhatsApp stickers, no white border.</string>
+  <string name="home_packs">Packs</string>
+  <string name="home_new_pack">New pack</string>
+  <string name="home_new_pack_first">Create a pack and add at least 3 stickers</string>
+  <string name="home_new_pack_sub">Static or animated</string>
+  <string name="home_more">More</string>
+  <string name="home_settings">Settings</string>
+  <string name="home_settings_desc">Theme, accent color, background</string>
+  <string name="home_about">About</string>
+  <string name="home_about_desc">Version, source code</string>
+  <string name="home_share_tip_title">Share to create</string>
+  <string name="home_share_tip">In any app, share a GIF, video or photo and pick \"Create sticker\".</string>
+  <string name="pack_kind_static">Static</string>
+  <string name="pack_kind_animated">Animated</string>
+  <plurals name="sticker_count">
+    <item quantity="one">%d sticker</item>
+    <item quantity="other">%d stickers</item>
+  </plurals>
+  <plurals name="stickers_missing">
+    <item quantity="one">%d to go</item>
+    <item quantity="other">%d to go</item>
+  </plurals>
+
+  <!-- new pack -->
+  <string name="newpack_title">New pack</string>
+  <string name="newpack_name">Pack name</string>
+  <string name="newpack_hint">Static: photos. Animated: GIFs and videos. WhatsApp doesn\'t mix both in one pack.</string>
+
+  <!-- pack -->
+  <string name="pack_static_sub">Static pack</string>
+  <string name="pack_animated_sub">Animated pack</string>
+  <string name="pack_count">%1$d of %2$d stickers</string>
+  <plurals name="pack_status_missing">
+    <item quantity="one">%d more to send it to WhatsApp (minimum 3).</item>
+    <item quantity="other">%d more to send it to WhatsApp (minimum 3).</item>
+  </plurals>
+  <string name="pack_status_added">Already in WhatsApp. Changes here update it there.</string>
+  <string name="pack_status_ready">Ready to send to WhatsApp.</string>
+  <string name="pack_in_whatsapp">In WhatsApp</string>
+  <string name="pack_stickers">Stickers</string>
+  <string name="pack_empty_static">No stickers yet. Add an image to start.</string>
+  <string name="pack_empty_animated">No stickers yet. Add a GIF or a video to start.</string>
+  <string name="pack_tip">Tap a sticker to change its emoji, export or delete it.</string>
+  <string name="pack_add">Sticker</string>
+  <string name="pack_send">WhatsApp</string>
+  <string name="pack_full">This pack already has 30 stickers, WhatsApp\'s maximum.</string>
+  <plurals name="pack_need_more">
+    <item quantity="one">WhatsApp needs at least 3 stickers per pack: %d to go.</item>
+    <item quantity="other">WhatsApp needs at least 3 stickers per pack: %d to go.</item>
+  </plurals>
+  <string name="pack_no_whatsapp">WhatsApp isn\'t installed.</string>
+  <string name="pack_wa_refused">This WhatsApp didn\'t accept the request. It may be outdated.</string>
+  <string name="pack_sent">Pack sent to WhatsApp.</string>
+  <string name="pack_wa_error_title">WhatsApp refused the pack</string>
+  <string name="pack_rename">Rename pack</string>
+  <string name="pack_delete">Delete pack</string>
+  <string name="pack_delete_q">Delete \"%1$s\" and all its stickers? If it\'s in WhatsApp, it disappears there too.</string>
+  <string name="pick_title">Add from</string>
+  <string name="pick_gallery">Gallery</string>
+  <string name="pick_gallery_desc">Photos, GIFs and videos on the phone</string>
+  <string name="pick_files">Files</string>
+  <string name="pick_files_desc">Any folder, including Downloads</string>
+  <string name="pick_no_app">No file app found.</string>
+  <string name="sticker_menu_emoji">Change emoji</string>
+  <string name="sticker_menu_emoji_desc">Now: %1$s</string>
+  <string name="sticker_menu_export">Export .webp file</string>
+  <string name="sticker_menu_export_desc">Saves a copy of the sticker</string>
+  <string name="sticker_menu_delete">Delete sticker</string>
+  <string name="emoji_title">Emoji</string>
+  <string name="emoji_hint">Up to 3 emojis separated by spaces. WhatsApp uses them in sticker search.</string>
+  <string name="delete_sticker_q">Delete this sticker?</string>
+  <string name="exported">Exported.</string>
+  <string name="export_failed">Couldn\'t export: %1$s</string>
+
+  <!-- editor -->
+  <string name="editor_title">New sticker</string>
+  <string name="editor_opening">Opening the file…</string>
+  <string name="editor_loading">Loading…</string>
+  <string name="editor_ready_static">Adjust the framing and save.</string>
+  <string name="editor_ready_animated">Adjust the framing, the clip and the speed. Use the preview to check.</string>
+  <string name="editor_preview">Preview</string>
+  <string name="editor_stop">Stop</string>
+  <string name="editor_fit">Fit whole</string>
+  <string name="editor_fill">Fill</string>
+  <string name="editor_gestures">Drag to move, pinch to zoom, double-tap to switch between fill and fit.</string>
+  <string name="editor_file">File</string>
+  <string name="editor_kind_image">Image</string>
+  <string name="editor_kind_gif">GIF</string>
+  <string name="editor_kind_video">Video</string>
+  <plurals name="frames">
+    <item quantity="one">%d frame</item>
+    <item quantity="other">%d frames</item>
+  </plurals>
+  <string name="editor_out_static">Becomes a static sticker (up to 100 KB)</string>
+  <string name="editor_out_animated">Becomes an animated sticker (up to 500 KB)</string>
+  <string name="editor_background">Background</string>
+  <string name="bg_keep">Keep</string>
+  <string name="bg_solid">Flat color</string>
+  <string name="bg_ai">AI</string>
+  <string name="bg_keep_hint">Keeps the background as it is. If it\'s already transparent, it stays transparent.</string>
+  <string name="bg_solid_hint">Makes the background color transparent, starting from the edges. Good for flat backgrounds (white, green screen, a single color). Raise the tolerance if some background is left; lower it if it eats into the drawing.</string>
+  <string name="bg_ai_hint">Cuts a person, animal or object out of any background. The first time it downloads the model from Google Play (needs internet).</string>
+  <string name="bg_tolerance">Tolerance: %1$d</string>
+  <string name="bg_everywhere">Everywhere in the image</string>
+  <string name="bg_everywhere_desc">Also removes that color inside the drawing (e.g. between the arms)</string>
+  <string name="bg_ai_cutting">Cutting out with AI…</string>
+  <string name="bg_ai_done">Background removed with AI. Check the cutout before saving.</string>
+  <string name="bg_ai_unavailable">AI cutout unavailable.</string>
+  <string name="bg_ai_error_title">AI cutout</string>
+  <string name="editor_clip">Clip</string>
+  <string name="editor_start">Start: %1$s of %2$s</string>
+  <string name="editor_length">Length: %1$s</string>
+  <string name="editor_speed">Speed</string>
+  <string name="editor_duration">The sticker will last %1$s.</string>
+  <string name="editor_duration_cut">The sticker will last %1$s (cut at 10 s, WhatsApp\'s limit).</string>
+  <string name="editor_emoji">Emoji</string>
+  <string name="editor_emoji_hint">Up to 3 emojis separated by spaces (WhatsApp uses them in search).</string>
+  <string name="editor_save">Save sticker</string>
+  <string name="editor_wait">Wait until the sticker is done.</string>
+  <string name="editor_wait_bg">Wait until the background is removed.</string>
+  <string name="editor_preview_preparing">Preparing the preview…</string>
+  <string name="editor_preview_loop">Preview playing in a loop.</string>
+  <string name="editor_preview_loop_video">Preview playing in a loop, without sound.</string>
+  <string name="editor_preview_video_error">This video can\'t be played in the preview.</string>
+  <string name="editor_preview_error">Couldn\'t play the preview: %1$s</string>
+  <string name="stage_static">Creating the static sticker…</string>
+  <string name="stage_read_gif">Reading the GIF: frame %1$d of %2$d</string>
+  <string name="stage_extract">Extracting the video: frame %1$d of %2$d</string>
+  <string name="stage_encode">Encoding: frame %1$d of %2$d</string>
+  <string name="editor_saved">Sticker saved (%1$d KB).</string>
+  <string name="editor_failed_title">Couldn\'t create it</string>
+  <string name="editor_oom">not enough memory; try a shorter clip</string>
+  <string name="editor_needs_motion">This pack is animated: it takes GIFs or videos. For a photo, use a static pack.</string>
+  <string name="editor_gif_one_frame">This GIF has a single frame, so it doesn\'t move. Put it in a static pack.</string>
+  <string name="editor_open_failed">Couldn\'t open it: %1$s</string>
+  <string name="editor_too_large">The file is too large (max. 40 MB).</string>
+  <string name="editor_video_unreadable">Couldn\'t read this video.</string>
+  <string name="editor_frames_failed">Couldn\'t extract enough frames from the video.</string>
+
+  <!-- settings -->
+  <string name="settings_title">Settings</string>
+  <string name="settings_subtitle">How Slap looks.</string>
+  <string name="appearance">Appearance</string>
+  <string name="theme">Theme</string>
+  <string name="theme_desc">AMOLED uses pure black, which saves battery on OLED screens.</string>
+  <string name="theme_system">System</string>
+  <string name="theme_light">Light</string>
+  <string name="theme_dark">Dark</string>
+  <string name="theme_amoled">AMOLED</string>
+  <string name="accent">Accent color</string>
+  <string name="accent_violet">Violet</string>
+  <string name="accent_blue">Blue</string>
+  <string name="accent_cyan">Cyan</string>
+  <string name="accent_green">Green</string>
+  <string name="accent_amber">Amber</string>
+  <string name="accent_orange">Orange</string>
+  <string name="accent_red">Red</string>
+  <string name="accent_pink">Pink</string>
+  <string name="accent_dynamic">Dynamic (Material You)</string>
+  <string name="background_anim">Background animation</string>
+  <string name="bg_orbs">Orbs</string>
+  <string name="bg_aurora">Aurora</string>
+  <string name="bg_horizon">Horizon</string>
+  <string name="bg_radar">Radar</string>
+  <string name="bg_depth">Depth</string>
+  <string name="bg_none">None</string>
+  <string name="background_anim_off">Android\'s \"Remove animations\" is on, so the background stays still.</string>
+
+  <!-- about -->
+  <string name="about_title">About</string>
+  <string name="about_version">Version %1$s</string>
+  <string name="about_source">Source code</string>
+  <string name="about_source_desc">github.com/tvnclr/Slap</string>
+
+  <!-- share -->
+  <string name="share_title">Create sticker</string>
+  <string name="share_subtitle">Which pack should it go in?</string>
+  <string name="share_nothing">Nothing to open.</string>
+  <string name="share_new_pack_sub_moving">Animated or static</string>
+  <string name="share_new_pack_sub_any">Static or animated</string>
+</resources>

@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="share_label">Criar figurinha</string>
+
+  <!-- common -->
+  <string name="save">Salvar</string>
+  <string name="cancel">Cancelar</string>
+  <string name="create">Criar</string>
+  <string name="delete">Excluir</string>
+  <string name="ok">OK</string>
+  <string name="error_generic">Erro: %1$s</string>
+  <string name="whatsapp_chooser">Adicionar ao WhatsApp</string>
+
+  <!-- AI cutout -->
+  <string name="ai_play_unavailable">Google Play indisponível: %1$s</string>
+  <string name="ai_downloading">Baixando o recorte com IA do Google Play (só na primeira vez)…</string>
+  <string name="ai_downloading_pct">Baixando o recorte com IA: %1$d%%</string>
+  <string name="ai_download_failed_code">Não deu para baixar o recorte com IA (código %1$d)</string>
+  <string name="ai_download_failed">Não deu para baixar o recorte com IA: %1$s</string>
+  <string name="ai_nothing_found">Nenhum objeto encontrado na imagem</string>
+  <string name="ai_failed">O recorte com IA falhou: %1$s</string>
+
+  <!-- home -->
+  <string name="home_subtitle">Figurinhas para o WhatsApp, sem borda branca.</string>
+  <string name="home_packs">Pacotes</string>
+  <string name="home_new_pack">Novo pacote</string>
+  <string name="home_new_pack_first">Crie um pacote e adicione pelo menos 3 figurinhas</string>
+  <string name="home_new_pack_sub">Estático ou animado</string>
+  <string name="home_more">Mais</string>
+  <string name="home_settings">Configurações</string>
+  <string name="home_settings_desc">Tema, cor de destaque, fundo</string>
+  <string name="home_about">Sobre</string>
+  <string name="home_about_desc">Versão, código-fonte</string>
+  <string name="home_share_tip_title">Compartilhar para criar</string>
+  <string name="home_share_tip">Em qualquer app, compartilhe um GIF, vídeo ou foto e escolha \"Criar figurinha\".</string>
+  <string name="pack_kind_static">Estático</string>
+  <string name="pack_kind_animated">Animado</string>
+  <plurals name="sticker_count">
+    <item quantity="one">%d figurinha</item>
+    <item quantity="other">%d figurinhas</item>
+  </plurals>
+  <plurals name="stickers_missing">
+    <item quantity="one">falta %d</item>
+    <item quantity="other">faltam %d</item>
+  </plurals>
+
+  <!-- new pack -->
+  <string name="newpack_title">Novo pacote</string>
+  <string name="newpack_name">Nome do pacote</string>
+  <string name="newpack_hint">Estático: fotos. Animado: GIFs e vídeos. O WhatsApp não mistura os dois no mesmo pacote.</string>
+
+  <!-- pack -->
+  <string name="pack_static_sub">Pacote estático</string>
+  <string name="pack_animated_sub">Pacote animado</string>
+  <string name="pack_count">%1$d de %2$d figurinhas</string>
+  <plurals name="pack_status_missing">
+    <item quantity="one">Falta %d para mandar ao WhatsApp (mínimo de 3).</item>
+    <item quantity="other">Faltam %d para mandar ao WhatsApp (mínimo de 3).</item>
+  </plurals>
+  <string name="pack_status_added">Já está no WhatsApp. Mudanças aqui são atualizadas lá.</string>
+  <string name="pack_status_ready">Pronto para mandar ao WhatsApp.</string>
+  <string name="pack_in_whatsapp">No WhatsApp</string>
+  <string name="pack_stickers">Figurinhas</string>
+  <string name="pack_empty_static">Nenhuma figurinha ainda. Adicione uma imagem para começar.</string>
+  <string name="pack_empty_animated">Nenhuma figurinha ainda. Adicione um GIF ou vídeo para começar.</string>
+  <string name="pack_tip">Toque numa figurinha para mudar o emoji, exportar ou excluir.</string>
+  <string name="pack_add">Figurinha</string>
+  <string name="pack_send">WhatsApp</string>
+  <string name="pack_full">O pacote já tem 30 figurinhas, o máximo do WhatsApp.</string>
+  <plurals name="pack_need_more">
+    <item quantity="one">O WhatsApp exige pelo menos 3 figurinhas por pacote: falta %d.</item>
+    <item quantity="other">O WhatsApp exige pelo menos 3 figurinhas por pacote: faltam %d.</item>
+  </plurals>
+  <string name="pack_no_whatsapp">WhatsApp não encontrado.</string>
+  <string name="pack_wa_refused">Este WhatsApp não aceitou o pedido. Ele pode estar desatualizado.</string>
+  <string name="pack_sent">Pacote mandado para o WhatsApp.</string>
+  <string name="pack_wa_error_title">O WhatsApp recusou o pacote</string>
+  <string name="pack_rename">Renomear pacote</string>
+  <string name="pack_delete">Excluir pacote</string>
+  <string name="pack_delete_q">Excluir \"%1$s\" e todas as figurinhas dele? Se ele já estiver no WhatsApp, some de lá também.</string>
+  <string name="pick_title">Adicionar de</string>
+  <string name="pick_gallery">Galeria</string>
+  <string name="pick_gallery_desc">Fotos, GIFs e vídeos do celular</string>
+  <string name="pick_files">Arquivos</string>
+  <string name="pick_files_desc">Qualquer pasta, incluindo Downloads</string>
+  <string name="pick_no_app">Nenhum app de arquivos encontrado.</string>
+  <string name="sticker_menu_emoji">Mudar emoji</string>
+  <string name="sticker_menu_emoji_desc">Atual: %1$s</string>
+  <string name="sticker_menu_export">Exportar arquivo .webp</string>
+  <string name="sticker_menu_export_desc">Salva uma cópia da figurinha</string>
+  <string name="sticker_menu_delete">Excluir figurinha</string>
+  <string name="emoji_title">Emoji</string>
+  <string name="emoji_hint">Até 3 emojis, separados por espaço. O WhatsApp usa na busca de figurinhas.</string>
+  <string name="delete_sticker_q">Excluir esta figurinha?</string>
+  <string name="exported">Exportado.</string>
+  <string name="export_failed">Não deu para exportar: %1$s</string>
+
+  <!-- editor -->
+  <string name="editor_title">Nova figurinha</string>
+  <string name="editor_opening">Abrindo o arquivo…</string>
+  <string name="editor_loading">Carregando…</string>
+  <string name="editor_ready_static">Ajuste o enquadramento e salve.</string>
+  <string name="editor_ready_animated">Ajuste o enquadramento, o trecho e a velocidade. Use a prévia para conferir.</string>
+  <string name="editor_preview">Prévia</string>
+  <string name="editor_stop">Parar</string>
+  <string name="editor_fit">Encaixar inteiro</string>
+  <string name="editor_fill">Preencher</string>
+  <string name="editor_gestures">Arraste para mover, pinça para zoom, toque duplo alterna entre preencher e encaixar.</string>
+  <string name="editor_file">Arquivo</string>
+  <string name="editor_kind_image">Imagem</string>
+  <string name="editor_kind_gif">GIF</string>
+  <string name="editor_kind_video">Vídeo</string>
+  <plurals name="frames">
+    <item quantity="one">%d quadro</item>
+    <item quantity="other">%d quadros</item>
+  </plurals>
+  <string name="editor_out_static">Vira figurinha estática (até 100 KB)</string>
+  <string name="editor_out_animated">Vira figurinha animada (até 500 KB)</string>
+  <string name="editor_background">Fundo</string>
+  <string name="bg_keep">Manter</string>
+  <string name="bg_solid">Fundo liso</string>
+  <string name="bg_ai">IA</string>
+  <string name="bg_keep_hint">Mantém o fundo como está. Se ele já for transparente, continua transparente.</string>
+  <string name="bg_solid_hint">Deixa transparente a cor do fundo, a partir das bordas. Bom para fundo liso (branco, tela verde, cor única). Aumente a tolerância se sobrar fundo; diminua se comer o desenho.</string>
+  <string name="bg_ai_hint">Recorta pessoa, animal ou objeto de qualquer fundo. Na primeira vez baixa o modelo do Google Play (precisa de internet).</string>
+  <string name="bg_tolerance">Tolerância: %1$d</string>
+  <string name="bg_everywhere">Em toda a imagem</string>
+  <string name="bg_everywhere_desc">Também apaga essa cor dentro do desenho (ex.: entre os braços)</string>
+  <string name="bg_ai_cutting">Recortando com IA…</string>
+  <string name="bg_ai_done">Fundo removido com IA. Confira o recorte antes de salvar.</string>
+  <string name="bg_ai_unavailable">Recorte com IA indisponível.</string>
+  <string name="bg_ai_error_title">Recorte com IA</string>
+  <string name="editor_clip">Trecho</string>
+  <string name="editor_start">Início: %1$s de %2$s</string>
+  <string name="editor_length">Duração: %1$s</string>
+  <string name="editor_speed">Velocidade</string>
+  <string name="editor_duration">A figurinha vai durar %1$s.</string>
+  <string name="editor_duration_cut">A figurinha vai durar %1$s (cortada em 10 s, limite do WhatsApp).</string>
+  <string name="editor_emoji">Emoji</string>
+  <string name="editor_emoji_hint">Até 3 emojis separados por espaço (o WhatsApp usa na busca).</string>
+  <string name="editor_save">Salvar figurinha</string>
+  <string name="editor_wait">Espere terminar de gerar a figurinha.</string>
+  <string name="editor_wait_bg">Espere terminar de tirar o fundo.</string>
+  <string name="editor_preview_preparing">Preparando a prévia…</string>
+  <string name="editor_preview_loop">Prévia tocando em loop.</string>
+  <string name="editor_preview_loop_video">Prévia tocando em loop, sem som.</string>
+  <string name="editor_preview_video_error">Este vídeo não pôde ser reproduzido na prévia.</string>
+  <string name="editor_preview_error">Não deu para tocar a prévia: %1$s</string>
+  <string name="stage_static">Gerando a figurinha estática…</string>
+  <string name="stage_read_gif">Lendo o GIF: quadro %1$d de %2$d</string>
+  <string name="stage_extract">Extraindo o vídeo: quadro %1$d de %2$d</string>
+  <string name="stage_encode">Codificando: quadro %1$d de %2$d</string>
+  <string name="editor_saved">Figurinha salva (%1$d KB).</string>
+  <string name="editor_failed_title">Não deu para gerar</string>
+  <string name="editor_oom">memória insuficiente; tente um trecho menor</string>
+  <string name="editor_needs_motion">Este pacote é animado: aceita GIF ou vídeo. Para foto, use um pacote estático.</string>
+  <string name="editor_gif_one_frame">Este GIF tem um quadro só, então não anima. Coloque num pacote estático.</string>
+  <string name="editor_open_failed">Não deu para abrir: %1$s</string>
+  <string name="editor_too_large">Arquivo grande demais (máx. 40 MB).</string>
+  <string name="editor_video_unreadable">Não consegui ler este vídeo.</string>
+  <string name="editor_frames_failed">Não consegui extrair quadros suficientes do vídeo.</string>
+
+  <!-- settings -->
+  <string name="settings_title">Configurações</string>
+  <string name="settings_subtitle">A aparência do Slap.</string>
+  <string name="appearance">Aparência</string>
+  <string name="theme">Tema</string>
+  <string name="theme_desc">AMOLED usa preto puro, que economiza bateria em tela OLED.</string>
+  <string name="theme_system">Sistema</string>
+  <string name="theme_light">Claro</string>
+  <string name="theme_dark">Escuro</string>
+  <string name="theme_amoled">AMOLED</string>
+  <string name="accent">Cor de destaque</string>
+  <string name="accent_violet">Roxo</string>
+  <string name="accent_blue">Azul</string>
+  <string name="accent_cyan">Ciano</string>
+  <string name="accent_green">Verde</string>
+  <string name="accent_amber">Âmbar</string>
+  <string name="accent_orange">Laranja</string>
+  <string name="accent_red">Vermelho</string>
+  <string name="accent_pink">Rosa</string>
+  <string name="accent_dynamic">Dinâmica (Material You)</string>
+  <string name="background_anim">Animação de fundo</string>
+  <string name="bg_orbs">Órbitas</string>
+  <string name="bg_aurora">Aurora</string>
+  <string name="bg_horizon">Horizonte</string>
+  <string name="bg_radar">Radar</string>
+  <string name="bg_depth">Profundidade</string>
+  <string name="bg_none">Nenhuma</string>
+  <string name="background_anim_off">O \"Remove animations\" do Android está ligado, então o fundo fica parado.</string>
+
+  <!-- about -->
+  <string name="about_title">Sobre</string>
+  <string name="about_version">Versão %1$s</string>
+  <string name="about_source">Código-fonte</string>
+  <string name="about_source_desc">github.com/tvnclr/Slap</string>
+
+  <!-- share -->
+  <string name="share_title">Criar figurinha</string>
+  <string name="share_subtitle">Em qual pacote colocar?</string>
+  <string name="share_nothing">Nada para abrir.</string>
+  <string name="share_new_pack_sub_moving">Animado ou estático</string>
+  <string name="share_new_pack_sub_any">Estático ou animado</string>
+</resources>
