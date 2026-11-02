@@ -22,6 +22,7 @@ import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material.icons.rounded.TextFields
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -43,9 +44,11 @@ import dev.tvnclr.slap.R
 import dev.tvnclr.slap.engine.CropView
 import dev.tvnclr.slap.engine.PackStore
 import dev.tvnclr.slap.engine.StickerMaker
+import dev.tvnclr.slap.engine.TextOverlayView
 import dev.tvnclr.ui.Tv
 import dev.tvnclr.ui.TvButton
 import dev.tvnclr.ui.TvButtonStyle
+import dev.tvnclr.ui.TvColorDots
 import dev.tvnclr.ui.TvChoiceChips
 import dev.tvnclr.ui.TvConfirmDialog
 import dev.tvnclr.ui.TvDivider
@@ -63,9 +66,11 @@ import java.text.NumberFormat
 private val SPEEDS = listOf(0.25f, 0.5f, 0.75f, 1f, 1.5f, 2f)
 private const val TOL_MIN = 5
 private const val TOL_MAX = 120
+private val TEXT_COLORS = listOf(0xFFFFFFFF, 0xFF111111, 0xFFFFD54F, 0xFFFF9F43, 0xFFFF5252, 0xFFFF80AB, 0xFF448AFF, 0xFF69F0AE).map { it.toInt() }
+private val FONT_NAMES = listOf(R.string.font_black, R.string.font_bold, R.string.font_condensed, R.string.font_serif, R.string.font_mono, R.string.font_casual, R.string.font_cursive)
 
 @Composable
-fun EditorScreen(packId: String, uri: Uri, onDone: (saved: Boolean) -> Unit) {
+fun EditorScreen(packId: String, uri: Uri, editFile: String?, onDone: (saved: Boolean) -> Unit) {
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
   val pack = remember(packId) { PackStore.get(context, packId) }
@@ -73,7 +78,7 @@ fun EditorScreen(packId: String, uri: Uri, onDone: (saved: Boolean) -> Unit) {
     LaunchedEffect(Unit) { onDone(false) }
     return
   }
-  val ed = remember(packId, uri) { EditorController(context, scope, pack, uri) }
+  val ed = remember(packId, uri) { EditorController(context, scope, pack, uri, editFile) }
   LaunchedEffect(ed) { ed.load() }
   DisposableEffect(ed) { onDispose { ed.release() } }
   LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { ed.stopPreview() }
@@ -84,7 +89,7 @@ fun EditorScreen(packId: String, uri: Uri, onDone: (saved: Boolean) -> Unit) {
   val animated = ed.animatedOutput
 
   TvPage(
-      title = stringResource(R.string.editor_title),
+      title = stringResource(if (editFile != null) R.string.editor_title_edit else R.string.editor_title),
       subtitle = pack.name,
       onBack = { if (ed.busy) context.toast(context.getString(R.string.editor_wait)) else onDone(false) },
       bottomBar = {
@@ -116,7 +121,9 @@ fun EditorScreen(packId: String, uri: Uri, onDone: (saved: Boolean) -> Unit) {
           frame.addView(cropView, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT))
           val video = TextureView(ctx).apply { visibility = View.INVISIBLE }
           frame.addView(video, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
-          ed.attachViews(cropView, video)
+          val textView = TextOverlayView(ctx)
+          frame.addView(textView, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+          ed.attachViews(cropView, video, textView)
           frame
         },
         update = { ed.crop?.setColors(c.cardBorder.toArgb(), c.elevated.toArgb(), c.card.toArgb(), c.textSecondary.toArgb(), loading) },
@@ -245,6 +252,63 @@ fun EditorScreen(packId: String, uri: Uri, onDone: (saved: Boolean) -> Unit) {
         }
       }
 
+      TvSection(stringResource(R.string.editor_text), Icons.Rounded.TextFields) {
+        Column(Modifier.padding(TvSpace.l), verticalArrangement = Arrangement.spacedBy(TvSpace.m)) {
+          TvTextField(
+              ed.text,
+              {
+                ed.text = it
+                ed.updateText()
+              },
+              placeholder = stringResource(R.string.text_placeholder),
+              singleLine = false,
+          )
+          if (ed.text.isNotBlank()) {
+            Text(stringResource(R.string.text_font), style = TvType.item, color = c.textPrimary)
+            TvChoiceChips(
+                FONT_NAMES.map { stringResource(it) },
+                ed.font,
+                {
+                  ed.font = it
+                  ed.updateText()
+                },
+            )
+            Text(stringResource(R.string.text_size), style = TvType.item, color = c.textPrimary)
+            Slider(
+                value = ed.textSize,
+                onValueChange = {
+                  ed.textSize = it
+                  ed.updateText()
+                },
+                valueRange = 0.05f..0.30f,
+                colors = sliderColors(),
+            )
+            Text(stringResource(R.string.text_color), style = TvType.item, color = c.textPrimary)
+          }
+        }
+        if (ed.text.isNotBlank()) {
+          TvColorDots(
+              colors = TEXT_COLORS.map { androidx.compose.ui.graphics.Color(it) },
+              selected = TEXT_COLORS.indexOf(ed.textColor),
+              onSelect = {
+                ed.textColor = TEXT_COLORS[it]
+                ed.updateText()
+              },
+          )
+          TvDivider(inset = false)
+          TvSwitchRow(
+              stringResource(R.string.text_outline),
+              ed.outline,
+              {
+                ed.outline = it
+                ed.updateText()
+              },
+              subtitle = stringResource(R.string.text_outline_desc),
+          )
+          Text(stringResource(R.string.text_drag_hint), style = TvType.caption, color = c.textSecondary, modifier = Modifier.padding(start = TvSpace.l, end = TvSpace.l, bottom = TvSpace.l))
+        }
+      }
+
       TvSection(stringResource(R.string.editor_emoji), Icons.Rounded.EmojiEmotions) {
         Column(Modifier.padding(TvSpace.l), verticalArrangement = Arrangement.spacedBy(TvSpace.s)) {
           TvTextField(ed.emoji, { ed.emoji = it }, placeholder = "😀")
@@ -256,7 +320,7 @@ fun EditorScreen(packId: String, uri: Uri, onDone: (saved: Boolean) -> Unit) {
 
   ed.fatal?.let { msg ->
     TvConfirmDialog(
-        title = stringResource(R.string.editor_title),
+        title = stringResource(if (editFile != null) R.string.editor_title_edit else R.string.editor_title),
         text = msg,
         confirmText = stringResource(R.string.ok),
         dismissText = null,

@@ -201,4 +201,49 @@
   <string name="share_nothing">Nada para abrir.</string>
   <string name="share_new_pack_sub_moving">Animado ou estático</string>
   <string name="share_new_pack_sub_any">Estático ou animado</string>
+
+  <!-- 1.1.0: texto, reeditar, Telegram, backup -->
+  <string name="editor_title_edit">Editar figurinha</string>
+  <string name="editor_text">Texto</string>
+  <string name="text_placeholder">Escreva uma legenda (opcional)</string>
+  <string name="text_font">Fonte</string>
+  <string name="text_size">Tamanho</string>
+  <string name="text_color">Cor</string>
+  <string name="text_outline">Contorno</string>
+  <string name="text_outline_desc">Borda contrastante pra ler em qualquer imagem</string>
+  <string name="text_drag_hint">Arraste o texto na imagem pra mover.</string>
+  <string name="font_black">Black</string>
+  <string name="font_bold">Negrito</string>
+  <string name="font_condensed">Condensada</string>
+  <string name="font_serif">Serifa</string>
+  <string name="font_mono">Mono</string>
+  <string name="font_casual">Casual</string>
+  <string name="font_cursive">Cursiva</string>
+  <string name="sticker_menu_edit">Editar</string>
+  <string name="sticker_menu_edit_desc">Muda enquadramento, fundo, texto ou trecho</string>
+  <string name="sticker_menu_edit_old">Feita antes da versão 1.1.0, então o original não foi guardado</string>
+  <string name="pack_telegram">Enviar pro Telegram</string>
+  <string name="pack_telegram_animated">O Telegram não aceita figurinhas WebP animadas</string>
+  <string name="pack_telegram_empty">Adicione uma figurinha primeiro.</string>
+  <string name="pack_no_telegram">O Telegram não está instalado.</string>
+  <string name="data">Dados</string>
+  <string name="backup">Fazer backup dos pacotes</string>
+  <string name="backup_desc">Salva todos os pacotes num arquivo .zip</string>
+  <string name="restore">Restaurar backup</string>
+  <string name="restore_desc">Adiciona os pacotes de um .zip do Slap</string>
+  <string name="backup_note">Restaurar nunca sobrescreve: pacotes que você já tem são pulados.</string>
+  <string name="backup_failed">Falha no backup: %1$s</string>
+  <string name="restore_failed">Falha ao restaurar: %1$s</string>
+  <plurals name="backup_done">
+    <item quantity="one">%d pacote salvo.</item>
+    <item quantity="other">%d pacotes salvos.</item>
+  </plurals>
+  <plurals name="restore_done">
+    <item quantity="one">%d pacote restaurado.</item>
+    <item quantity="other">%d pacotes restaurados.</item>
+  </plurals>
+  <plurals name="restore_skipped">
+    <item quantity="one">%d já existia.</item>
+    <item quantity="other">%d já existiam.</item>
+  </plurals>
 </resources>

@@ -23,6 +23,10 @@ import dev.tvnclr.slap.R
 import dev.tvnclr.slap.engine.CropView
 import dev.tvnclr.slap.engine.PackStore
 import dev.tvnclr.slap.engine.StickerMaker
+import dev.tvnclr.slap.engine.TextLayer
+import dev.tvnclr.slap.engine.TextOverlayView
+import org.json.JSONArray
+import org.json.JSONObject
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,7 +38,17 @@ import kotlinx.coroutines.withContext
  * (GIF frames or MediaPlayer on a TextureView that follows the crop) and the final render.
  * The crop and video views are classic Views hosted by the Compose screen.
  */
-class EditorController(private val context: Context, private val scope: CoroutineScope, val pack: PackStore.Pack, private val uri: Uri) {
+/**
+ * [editFile] is set when re-editing a saved sticker: [uri] then points at its source copy and the
+ * saved settings (framing, background, clip, text) are restored.
+ */
+class EditorController(
+    private val context: Context,
+    private val scope: CoroutineScope,
+    val pack: PackStore.Pack,
+    private val uri: Uri,
+    val editFile: String? = null,
+) {
 
   enum class Bg { KEEP, SOLID, AI }
 
@@ -58,6 +72,31 @@ class EditorController(private val context: Context, private val scope: Coroutin
   var startMs by mutableLongStateOf(0L)
   var lenMs by mutableLongStateOf(3000L)
   var speed by mutableFloatStateOf(1f)
+
+  // ── text box ──
+  var text by mutableStateOf("")
+  var font by mutableIntStateOf(0)
+  var textSize by mutableFloatStateOf(0.12f)
+  var textColor by mutableIntStateOf(0xFFFFFFFF.toInt())
+  var outline by mutableStateOf(true)
+  private var textX = 0.5f
+  private var textY = 0.82f
+
+  fun textLayer(): TextLayer =
+      TextLayer().also {
+        it.text = text
+        it.font = font
+        it.size = textSize
+        it.color = textColor
+        it.outline = outline
+        it.x = textX
+        it.y = textY
+      }
+
+  /** Call after changing any text setting so the preview redraws. */
+  fun updateText() {
+    overlay?.setLayer(textLayer())
+  }
   var emoji by mutableStateOf("😀")
 
   val animatedOutput: Boolean
@@ -94,12 +133,21 @@ class EditorController(private val context: Context, private val scope: Coroutin
     private set
 
   private var video: TextureView? = null
+  private var overlay: TextOverlayView? = null
+  /** Saved framing waiting for the first frame (re-edit). */
+  private var pendingMatrix: Matrix? = null
 
-  fun attachViews(cropView: CropView, videoView: TextureView) {
+  fun attachViews(cropView: CropView, videoView: TextureView, textView: TextOverlayView) {
     crop = cropView
     video = videoView
+    overlay = textView
     cropView.setOnChange { applyVideoTransform() }
-    preview?.let { cropView.setSource(it, false) }
+    textView.setOnMoved { x, y ->
+      textX = x
+      textY = y
+    }
+    textView.setLayer(textLayer())
+    preview?.let { show(it, false) }
   }
 
   // ── loading ──
@@ -107,7 +155,10 @@ class EditorController(private val context: Context, private val scope: Coroutin
   fun load() {
     scope.launch {
       try {
-        val s = withContext(Dispatchers.IO) { StickerMaker.open(context, uri) }
+        val saved =
+            editFile?.let { f -> withContext(Dispatchers.IO) { runCatching { JSONObject(PackStore.settingsFile(pack, f).readText()) }.getOrNull() } }
+        val known = saved?.optString("kind")?.let { k -> runCatching { StickerMaker.Kind.valueOf(k) }.getOrNull() }
+        val s = withContext(Dispatchers.IO) { StickerMaker.open(context, uri, known) }
         source = s
         kind = s.kind
         if (pack.animated && s.kind == StickerMaker.Kind.IMAGE) {
@@ -137,7 +188,9 @@ class EditorController(private val context: Context, private val scope: Coroutin
         }
         // removing the background of a video does not work well: photo and GIF only
         if (s.kind == StickerMaker.Kind.VIDEO) bg = Bg.KEEP
+        if (saved != null) restore(saved)
         setStill(f, keep = false)
+        if (saved != null && s.kind == StickerMaker.Kind.VIDEO && startMs > 0) refreshVideoStill()
         status = context.getString(if (animatedOutput) R.string.editor_ready_animated else R.string.editor_ready_static)
         loaded = true
       } catch (p: StickerMaker.Problem) {
@@ -164,7 +217,82 @@ class EditorController(private val context: Context, private val scope: Coroutin
 
   private fun show(b: Bitmap, keep: Boolean) {
     preview = b
-    crop?.setSource(b, keep)
+    val c = crop ?: return
+    c.setSource(b, keep)
+    if (!keep) {
+      pendingMatrix?.let {
+        c.restoreOutputMatrix(it, StickerMaker.SIZE)
+        fillMode = c.isFillMode
+        pendingMatrix = null
+      }
+    }
+  }
+
+  // ── saved settings (re-edit) ──
+
+  private fun restore(o: JSONObject) {
+    bg = runCatching { Bg.valueOf(o.optString("bg", "KEEP")) }.getOrDefault(Bg.KEEP)
+    if (bg == Bg.AI && !aiAllowed) bg = Bg.KEEP
+    tolerance = o.optInt("tolerance", tolerance)
+    everywhere = o.optBoolean("everywhere", false)
+    speed = o.optDouble("speed", 1.0).toFloat()
+    startMs = o.optLong("startMs", 0L)
+    lenMs = o.optLong("lengthMs", lenMs)
+    emoji = o.optString("emoji", emoji).replace(",", " ")
+    val t = TextLayer.fromJson(o.optJSONObject("text"))
+    text = t.text
+    font = t.font
+    textSize = t.size
+    textColor = t.color
+    outline = t.outline
+    textX = t.x
+    textY = t.y
+    updateText()
+    o.optJSONArray("matrix")?.let { a ->
+      if (a.length() == 9) pendingMatrix = Matrix().apply { setValues(FloatArray(9) { a.optDouble(it).toFloat() }) }
+    }
+  }
+
+  private fun settingsJson(base: Matrix, em: String): JSONObject {
+    val v = FloatArray(9).also { base.getValues(it) }
+    return JSONObject().apply {
+      put("kind", kind?.name)
+      put("bg", bg.name)
+      put("tolerance", tolerance)
+      put("everywhere", everywhere)
+      put("speed", speed.toDouble())
+      put("startMs", startMs)
+      put("lengthMs", lenMs)
+      put("emoji", em)
+      put("text", textLayer().toJson())
+      put("matrix", JSONArray().apply { v.forEach { put(it.toDouble()) } })
+    }
+  }
+
+  /** Copies the original file next to the sticker so it can be edited later (skipped above the size cap). */
+  private fun saveSource(sticker: String): Boolean {
+    val dst = PackStore.sourceFile(pack, sticker)
+    dst.parentFile?.mkdirs()
+    return try {
+      var total = 0L
+      context.contentResolver.openInputStream(uri).use { input ->
+        requireNotNull(input)
+        dst.outputStream().use { out ->
+          val buf = ByteArray(64 * 1024)
+          while (true) {
+            val n = input.read(buf)
+            if (n <= 0) break
+            total += n
+            if (total > MAX_SOURCE_BYTES) throw java.io.IOException("source too large")
+            out.write(buf, 0, n)
+          }
+        }
+      }
+      true
+    } catch (e: Exception) {
+      dst.delete()
+      false
+    }
   }
 
   // ── background ──
@@ -439,6 +567,7 @@ class EditorController(private val context: Context, private val scope: Coroutin
           speed = this@EditorController.speed
           startMs = this@EditorController.startMs
           lengthMs = effectiveLen
+          text = textLayer().takeUnless { it.isEmpty }
         }
     val base = c.outputMatrix(StickerMaker.SIZE)
     val em = StickerMaker.parseEmoji(emoji)
@@ -464,7 +593,17 @@ class EditorController(private val context: Context, private val scope: Coroutin
                 }
               }
             }
-        withContext(Dispatchers.IO) { PackStore.addSticker(pack, webp, em) }
+        val settings = settingsJson(base, em)
+        withContext(Dispatchers.IO) {
+          val edit = editFile
+          if (edit != null) {
+            PackStore.replaceSticker(pack, edit, webp, em)
+            PackStore.settingsFile(pack, edit).writeText(settings.toString())
+          } else {
+            val name = PackStore.addSticker(pack, webp, em)
+            if (saveSource(name)) PackStore.settingsFile(pack, name).writeText(settings.toString())
+          }
+        }
         markBusy(false)
         context.toast(context.getString(R.string.editor_saved, (webp.size + 1023) / 1024))
         onSaved()
@@ -484,6 +623,7 @@ class EditorController(private val context: Context, private val scope: Coroutin
     busy = b
     progress = -1f
     crop?.isEnabled = !b
+    overlay?.isEnabled = !b
     (context as? Activity)?.window?.let { if (b) it.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) else it.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
   }
 
@@ -493,3 +633,6 @@ class EditorController(private val context: Context, private val scope: Coroutin
     source?.release()
   }
 }
+
+/** Above this, the original is not kept and the sticker cannot be re-edited. */
+private const val MAX_SOURCE_BYTES = 100L * 1024 * 1024

@@ -16,13 +16,13 @@ private object Routes {
   const val HOME = "home"
   const val SHARE = "share"
   const val PACK = "pack/{id}"
-  const val EDITOR = "editor/{pack}?uri={uri}"
+  const val EDITOR = "editor/{pack}?uri={uri}&edit={edit}"
   const val SETTINGS = "settings"
   const val ABOUT = "about"
 
   fun pack(id: String) = "pack/$id"
 
-  fun editor(pack: String, uri: Uri) = "editor/$pack?uri=${Uri.encode(uri.toString())}"
+  fun editor(pack: String, uri: Uri, edit: String? = null) = "editor/$pack?uri=${Uri.encode(uri.toString())}&edit=${edit.orEmpty()}"
 }
 
 /**
@@ -60,6 +60,7 @@ fun SlapApp(sharedUri: Uri?, onFinish: () -> Unit) {
           packId = entry.arguments?.getString("id").orEmpty(),
           onBack = { nav.popBackStack() },
           onEdit = { pack, uri -> nav.navigate(Routes.editor(pack, uri)) },
+          onEditSticker = { pack, file, uri -> nav.navigate(Routes.editor(pack, uri, file)) },
       )
     }
     composable(
@@ -68,12 +69,17 @@ fun SlapApp(sharedUri: Uri?, onFinish: () -> Unit) {
             listOf(
                 navArgument("pack") { type = NavType.StringType },
                 navArgument("uri") { type = NavType.StringType },
+                navArgument("edit") {
+                  type = NavType.StringType
+                  defaultValue = ""
+                },
             ),
     ) { entry ->
       val uri = Uri.parse(Uri.decode(entry.arguments?.getString("uri").orEmpty()))
       EditorScreen(
           packId = entry.arguments?.getString("pack").orEmpty(),
           uri = uri,
+          editFile = entry.arguments?.getString("edit")?.takeIf { it.isNotEmpty() },
           onDone = { saved ->
             if (fromShare && saved) onFinish() else nav.popBackStack()
           },

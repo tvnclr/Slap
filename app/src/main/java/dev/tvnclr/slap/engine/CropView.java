@@ -30,6 +30,27 @@ public class CropView extends View {
     private boolean dragging;
     private final Path clip = new Path();
     private Runnable onChange;
+    private Matrix pendingOut;
+    private int pendingSize;
+
+    /**
+     * Restores a framing saved with {@link #outputMatrix(int)} (source to size x size output).
+     * Applied as soon as the view has a size and a source.
+     */
+    public void restoreOutputMatrix(Matrix out, int size) {
+        pendingOut = new Matrix(out);
+        pendingSize = size;
+        applyPending();
+    }
+
+    private void applyPending() {
+        int s = getWidth();
+        if (pendingOut == null || src == null || s == 0) return;
+        m.set(pendingOut);
+        m.postScale((float) s / pendingSize, (float) s / pendingSize);
+        pendingOut = null;
+        changed();
+    }
     private int colorA = 0xFF25232F, colorB = 0xFF1B1A22, colorText = 0xFFA6A2B6;
     private String placeholder = "";
 
@@ -80,6 +101,7 @@ public class CropView extends View {
         if (!(keepTransform && sameSize)) {
             reset();
             changed();
+            applyPending();
         } else {
             invalidate();
         }
@@ -167,6 +189,7 @@ public class CropView extends View {
         clip.addRoundRect(new RectF(0, 0, w, h), r, r, Path.Direction.CW);
         reset();
         changed();
+        applyPending();
     }
 
     @Override

@@ -202,4 +202,49 @@
   <string name="share_nothing">Nothing to open.</string>
   <string name="share_new_pack_sub_moving">Animated or static</string>
   <string name="share_new_pack_sub_any">Static or animated</string>
+
+  <!-- 1.1.0: text, re-edit, Telegram, backup -->
+  <string name="editor_title_edit">Edit sticker</string>
+  <string name="editor_text">Text</string>
+  <string name="text_placeholder">Type a caption (optional)</string>
+  <string name="text_font">Font</string>
+  <string name="text_size">Size</string>
+  <string name="text_color">Color</string>
+  <string name="text_outline">Outline</string>
+  <string name="text_outline_desc">Contrasting border so it reads on any image</string>
+  <string name="text_drag_hint">Drag the text on the image to move it.</string>
+  <string name="font_black">Black</string>
+  <string name="font_bold">Bold</string>
+  <string name="font_condensed">Condensed</string>
+  <string name="font_serif">Serif</string>
+  <string name="font_mono">Mono</string>
+  <string name="font_casual">Casual</string>
+  <string name="font_cursive">Cursive</string>
+  <string name="sticker_menu_edit">Edit</string>
+  <string name="sticker_menu_edit_desc">Change framing, background, text or clip</string>
+  <string name="sticker_menu_edit_old">Made before version 1.1.0, so the original was not kept</string>
+  <string name="pack_telegram">Send to Telegram</string>
+  <string name="pack_telegram_animated">Telegram doesn\'t accept animated WebP stickers</string>
+  <string name="pack_telegram_empty">Add a sticker first.</string>
+  <string name="pack_no_telegram">Telegram is not installed.</string>
+  <string name="data">Data</string>
+  <string name="backup">Back up packs</string>
+  <string name="backup_desc">Saves every pack in a .zip file</string>
+  <string name="restore">Restore backup</string>
+  <string name="restore_desc">Adds the packs from a Slap .zip file</string>
+  <string name="backup_note">Restoring never overwrites: packs you already have are skipped.</string>
+  <string name="backup_failed">Backup failed: %1$s</string>
+  <string name="restore_failed">Restore failed: %1$s</string>
+  <plurals name="backup_done">
+    <item quantity="one">%d pack saved.</item>
+    <item quantity="other">%d packs saved.</item>
+  </plurals>
+  <plurals name="restore_done">
+    <item quantity="one">%d pack restored.</item>
+    <item quantity="other">%d packs restored.</item>
+  </plurals>
+  <plurals name="restore_skipped">
+    <item quantity="one">%d already existed.</item>
+    <item quantity="other">%d already existed.</item>
+  </plurals>
 </resources>

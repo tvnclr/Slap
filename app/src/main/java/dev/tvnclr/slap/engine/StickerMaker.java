@@ -101,6 +101,8 @@ public final class StickerMaker {
         public float speed = 1f;
         public long startMs;
         public long lengthMs;
+        /** Optional text drawn on every frame. */
+        public TextLayer text;
     }
 
     public static final class Frames {
@@ -148,8 +150,13 @@ public final class StickerMaker {
     }
 
     public static Source open(Context c, Uri uri) throws IOException {
+        return open(c, uri, null);
+    }
+
+    /** Opens a file whose kind is already known (the saved source copy of a sticker), or detects it. */
+    public static Source open(Context c, Uri uri, Kind known) throws IOException {
         Source s = new Source(uri);
-        s.kind = detectKind(c, uri);
+        s.kind = known != null ? known : detectKind(c, uri);
         if (s.kind == Kind.GIF) {
             s.gifData = readAll(c, uri);
             final Bitmap[] first = new Bitmap[1];
@@ -224,7 +231,7 @@ public final class StickerMaker {
 
     // ---------------------------------------------------------------- render
 
-    private static Bitmap render(Bitmap src, Matrix base, int prevW, int prevH) {
+    private static Bitmap render(Bitmap src, Matrix base, int prevW, int prevH, TextLayer text) {
         Bitmap out = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(out);
         Matrix mm = new Matrix();
@@ -233,6 +240,7 @@ public final class StickerMaker {
         }
         mm.postConcat(base);
         c.drawBitmap(src, mm, new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG));
+        if (text != null) text.draw(c, SIZE);
         return out;
     }
 
@@ -247,7 +255,7 @@ public final class StickerMaker {
     public static byte[] make(Source s, Bitmap still, Matrix base, int prevW, int prevH, Options o, Progress pr) throws IOException {
         if (!o.animated) {
             pr.on(STAGE_STATIC, 0, 0);
-            Bitmap out = render(still, base, prevW, prevH);
+            Bitmap out = render(still, base, prevW, prevH, o.text);
             byte[] webp = StickerEncoder.encodeStatic(out);
             out.recycle();
             return webp;
@@ -260,7 +268,7 @@ public final class StickerMaker {
                 pr.on(STAGE_READ_GIF, idx + 1, s.gifFrames);
                 Bitmap f = Bitmap.createBitmap(argb, w, h, Bitmap.Config.ARGB_8888);
                 if (o.solidBackground) f = solidFrame(f, o.tolerance, o.everywhere);
-                frames.add(render(f, base, prevW, prevH));
+                frames.add(render(f, base, prevW, prevH, o.text));
                 f.recycle();
                 int d = Math.max(MIN_FRAME_MS, Math.round(delay / o.speed));
                 durs.add(d);
@@ -282,7 +290,7 @@ public final class StickerMaker {
                 long t = o.startMs + Math.round(i * (double) srcLen / n);
                 Bitmap f = s.videoFrame(t);
                 if (f == null) continue;
-                frames.add(render(f, base, prevW, prevH));
+                frames.add(render(f, base, prevW, prevH, o.text));
                 f.recycle();
                 durs.add(frameMs);
             }
