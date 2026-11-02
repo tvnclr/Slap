@@ -32,7 +32,6 @@
   <string name="home_settings_desc">Theme, accent color, background</string>
   <string name="home_about">About</string>
   <string name="home_about_desc">Version, source code</string>
-  <string name="home_share_tip_title">Share to create</string>
   <string name="home_share_tip">In any app, share a GIF, video or photo and pick \"Create sticker\".</string>
   <string name="pack_kind_static">Static</string>
   <string name="pack_kind_animated">Animated</string>

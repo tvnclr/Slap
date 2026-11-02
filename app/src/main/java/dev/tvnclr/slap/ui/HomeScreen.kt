@@ -4,7 +4,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.IosShare
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.runtime.Composable
@@ -23,6 +22,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import dev.tvnclr.slap.R
 import dev.tvnclr.slap.engine.PackStore
 import dev.tvnclr.ui.TvDivider
+import dev.tvnclr.ui.TvNote
 import dev.tvnclr.ui.TvPage
 import dev.tvnclr.ui.TvRow
 import dev.tvnclr.ui.TvSection
@@ -80,9 +80,8 @@ fun HomeScreen(onOpenPack: (String) -> Unit, onSettings: () -> Unit, onAbout: ()
       TvRow(stringResource(R.string.home_settings), stringResource(R.string.home_settings_desc), Icons.Rounded.Palette, onClick = onSettings)
       TvDivider()
       TvRow(stringResource(R.string.home_about), stringResource(R.string.home_about_desc), Icons.Rounded.Info, onClick = onAbout)
-      TvDivider()
-      TvRow(stringResource(R.string.home_share_tip_title), stringResource(R.string.home_share_tip), Icons.Rounded.IosShare)
     }
+    TvNote(stringResource(R.string.home_share_tip))
   }
 
   if (creating) {

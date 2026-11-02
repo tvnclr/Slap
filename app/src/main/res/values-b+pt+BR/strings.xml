@@ -31,7 +31,6 @@
   <string name="home_settings_desc">Tema, cor de destaque, fundo</string>
   <string name="home_about">Sobre</string>
   <string name="home_about_desc">Versão, código-fonte</string>
-  <string name="home_share_tip_title">Compartilhar para criar</string>
   <string name="home_share_tip">Em qualquer app, compartilhe um GIF, vídeo ou foto e escolha \"Criar figurinha\".</string>
   <string name="pack_kind_static">Estático</string>
   <string name="pack_kind_animated">Animado</string>

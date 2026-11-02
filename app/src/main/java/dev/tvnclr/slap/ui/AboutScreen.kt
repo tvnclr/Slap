@@ -10,7 +10,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.IosShare
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -52,8 +51,6 @@ fun AboutScreen(onBack: () -> Unit) {
           icon = Icons.Rounded.Code,
           onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(SOURCE_URL))) },
       )
-      TvDivider()
-      TvRow(stringResource(R.string.home_share_tip_title), stringResource(R.string.home_share_tip), Icons.Rounded.IosShare)
     }
   }
 }
