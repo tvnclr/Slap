@@ -32,3 +32,7 @@ Requirements: JDK 17 and the Android SDK (platform 36).
 Release signing reads `../Slap-signing/keystore.properties` (outside the repository); without it the build is unsigned.
 
 `tvnclr-ui/` is the design system shared by tvnclr's apps (tokens, themes, components and backgrounds, in Jetpack Compose).
+
+## License
+
+[GPL-3.0](LICENSE). Copyright (C) 2026 tvnclr.
