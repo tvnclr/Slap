@@ -125,8 +125,10 @@
   <string name="bg_solid">Flat color</string>
   <string name="bg_ai">AI</string>
   <string name="bg_keep_hint">Keeps the background as it is. If it\'s already transparent, it stays transparent.</string>
-  <string name="bg_solid_hint">Makes the background color transparent, starting from the edges. Good for flat backgrounds (white, green screen, a single color). Raise the tolerance if some background is left; lower it if it eats into the drawing.</string>
-  <string name="bg_ai_hint">Cuts a person, animal or object out of any background. The first time it downloads the model from Google Play (needs internet).</string>
+  <string name="bg_solid_hint">Makes the background color transparent, starting from the edges. Good for flat backgrounds (white, green screen, a single color). Raise the tolerance if some background is left; lower it if it eats into the drawing. For real scenes (floor, room, street) use AI.</string>
+  <string name="bg_ai_hint">Cuts a person, animal or object out of any background. On GIFs it cuts every frame, which takes a few seconds. The first time it downloads the model from Google Play (needs internet).</string>
+  <string name="bg_ai_frames">Cutting frame %1$d of %2$d with AI…</string>
+  <string name="bg_ai_frames_done">Background removed on every frame. Use Preview to check it.</string>
   <string name="bg_tolerance">Tolerance: %1$d</string>
   <string name="bg_everywhere">Everywhere in the image</string>
   <string name="bg_everywhere_desc">Also removes that color inside the drawing (e.g. between the arms)</string>

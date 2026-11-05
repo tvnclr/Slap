@@ -101,6 +101,8 @@ public final class StickerMaker {
         public float speed = 1f;
         public long startMs;
         public long lengthMs;
+        /** AI cutout masks of a GIF (from {@link #gifAiMasks}), or null. */
+        public GifAi.Masks aiMasks;
         /** Text boxes drawn on every frame, bottom first. */
         public List<TextLayer> texts = new ArrayList<>();
     }
@@ -202,21 +204,41 @@ public final class StickerMaker {
         AiCutout.cut(c, src, progress::on, cb::done);
     }
 
-    private static Bitmap solidFrame(Bitmap f, int tol, boolean all) {
-        Bitmap out = BgRemover.solid(f, tol, all);
+    private static Bitmap solidFrame(Bitmap f, int tol, boolean all, int ref) {
+        Bitmap out = BgRemover.solid(f, tol, all, ref);
         f.recycle();
         return out;
     }
 
-    /** All GIF frames for the looping preview, with the flat-color removal applied if asked. */
-    public static Frames gifPreview(byte[] data, boolean solid, int tol, boolean all) {
+    /** AI cutout of every GIF frame; blocking, call off the main thread after {@link #cutWithAi} worked once. */
+    public static GifAi.Masks gifAiMasks(Source s, GifAi.Progress pr) throws Exception {
+        return GifAi.compute(s.gifData, s.gifFrames, pr);
+    }
+
+    /** First frame of a GIF with its AI mask, for the still preview. */
+    public static Bitmap applyAiMask(Bitmap frame, GifAi.Masks m) {
+        return GifAi.apply(frame.copy(Bitmap.Config.ARGB_8888, true), m, 0);
+    }
+
+    /**
+     * All GIF frames for the looping preview, with the flat-color removal (one background color for
+     * the whole GIF, taken from the first frame) or the AI masks applied if asked.
+     */
+    public static Frames gifPreview(byte[] data, boolean solid, int tol, boolean all, GifAi.Masks ai) {
         List<Bitmap> frames = new ArrayList<>();
         List<Integer> delays = new ArrayList<>();
         final long[] bytes = new long[1];
+        final int[] ref = new int[1];
         try {
             GifDecoder.decode(data, (argb, w, h, delay, idx) -> {
                 Bitmap f = Bitmap.createBitmap(argb, w, h, Bitmap.Config.ARGB_8888);
-                frames.add(solid ? solidFrame(f, tol, all) : f);
+                if (solid) {
+                    if (idx == 0) ref[0] = BgRemover.referenceColor(f);
+                    f = solidFrame(f, tol, all, ref[0]);
+                } else if (ai != null) {
+                    f = GifAi.apply(f, ai, idx);
+                }
+                frames.add(f);
                 delays.add(delay);
                 bytes[0] += (long) w * h * 4;
                 return bytes[0] < MAX_PREVIEW_BYTES && frames.size() < 300;
@@ -264,10 +286,12 @@ public final class StickerMaker {
         List<Integer> durs = new ArrayList<>();
         if (s.kind == Kind.GIF) {
             final int[] total = new int[1];
+            final int ref = o.solidBackground ? BgRemover.referenceColor(s.first) : 0;
             GifDecoder.decode(s.gifData, (argb, w, h, delay, idx) -> {
                 pr.on(STAGE_READ_GIF, idx + 1, s.gifFrames);
                 Bitmap f = Bitmap.createBitmap(argb, w, h, Bitmap.Config.ARGB_8888);
-                if (o.solidBackground) f = solidFrame(f, o.tolerance, o.everywhere);
+                if (o.solidBackground) f = solidFrame(f, o.tolerance, o.everywhere, ref);
+                else if (o.aiMasks != null) f = GifAi.apply(f, o.aiMasks, idx);
                 frames.add(render(f, base, prevW, prevH, o.texts));
                 f.recycle();
                 int d = Math.max(MIN_FRAME_MS, Math.round(delay / o.speed));

@@ -124,8 +124,10 @@
   <string name="bg_solid">Fundo liso</string>
   <string name="bg_ai">IA</string>
   <string name="bg_keep_hint">Mantém o fundo como está. Se ele já for transparente, continua transparente.</string>
-  <string name="bg_solid_hint">Deixa transparente a cor do fundo, a partir das bordas. Bom para fundo liso (branco, tela verde, cor única). Aumente a tolerância se sobrar fundo; diminua se comer o desenho.</string>
-  <string name="bg_ai_hint">Recorta pessoa, animal ou objeto de qualquer fundo. Na primeira vez baixa o modelo do Google Play (precisa de internet).</string>
+  <string name="bg_solid_hint">Deixa transparente a cor do fundo, a partir das bordas. Bom para fundo liso (branco, tela verde, cor única). Aumente a tolerância se sobrar fundo; diminua se comer o desenho. Para cena real (chão, quarto, rua), use IA.</string>
+  <string name="bg_ai_hint">Recorta pessoa, animal ou objeto de qualquer fundo. No GIF ela recorta cada quadro, o que leva alguns segundos. Na primeira vez baixa o modelo do Google Play (precisa de internet).</string>
+  <string name="bg_ai_frames">Recortando o quadro %1$d de %2$d com IA…</string>
+  <string name="bg_ai_frames_done">Fundo removido em todos os quadros. Use a prévia pra conferir.</string>
   <string name="bg_tolerance">Tolerância: %1$d</string>
   <string name="bg_everywhere">Em toda a imagem</string>
   <string name="bg_everywhere_desc">Também apaga essa cor dentro do desenho (ex.: entre os braços)</string>

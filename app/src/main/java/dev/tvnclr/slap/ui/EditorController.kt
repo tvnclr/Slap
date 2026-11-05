@@ -21,6 +21,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import dev.tvnclr.slap.R
 import dev.tvnclr.slap.engine.CropView
+import dev.tvnclr.slap.engine.GifAi
 import dev.tvnclr.slap.engine.PackStore
 import dev.tvnclr.slap.engine.StickerMaker
 import dev.tvnclr.slap.engine.TextLayer
@@ -122,9 +123,9 @@ class EditorController(
   val animatedOutput: Boolean
     get() = pack.animated && kind != null && kind != StickerMaker.Kind.IMAGE
 
-  /** The AI cutout is for single-frame stickers only (per frame it would be far too slow). */
+  /** AI cutout: single-frame stickers and GIFs (cut frame by frame); not videos. */
   val aiAllowed: Boolean
-    get() = !animatedOutput
+    get() = !animatedOutput || kind == StickerMaker.Kind.GIF
 
   val effectiveLen: Long
     get() = maxOf(100L, minOf(lenMs, videoMs - startMs))
@@ -137,6 +138,8 @@ class EditorController(
   private var source: StickerMaker.Source? = null
   private var raw: Bitmap? = null
   private var aiCut: Bitmap? = null
+  /** AI masks of every GIF frame, computed once per file. */
+  private var gifMasks: GifAi.Masks? = null
   private var preview: Bitmap? = null
   private var prevW = 0
   private var prevH = 0
@@ -354,6 +357,10 @@ class EditorController(
         }
       }
       Bg.AI -> {
+        if (animatedOutput && kind == StickerMaker.Kind.GIF) {
+          aiGif(src, token, keep)
+          return
+        }
         aiCut?.let {
           show(it, keep)
           bgBusy = false
@@ -375,6 +382,51 @@ class EditorController(
             status = context.getString(R.string.bg_ai_done)
           }
         }
+      }
+    }
+  }
+
+  /** GIF with AI: one cutout of the first frame (installs the model, reports errors), then every frame. */
+  private fun aiGif(src: Bitmap, token: Int, keep: Boolean) {
+    gifMasks?.let { m ->
+      show(StickerMaker.applyAiMask(src, m), keep)
+      bgBusy = false
+      return
+    }
+    val s = source ?: return
+    bgBusy = true
+    status = context.getString(R.string.bg_ai_cutting)
+    StickerMaker.cutWithAi(context, src, { msg -> ui.post { status = msg } }) { fg, err ->
+      if (token != bgToken.get()) return@cutWithAi
+      if (fg == null) {
+        bgBusy = false
+        status = context.getString(R.string.bg_ai_unavailable)
+        errorDialog = context.getString(R.string.bg_ai_error_title) to (err ?: "")
+        bg = Bg.KEEP
+        show(src, keep)
+        return@cutWithAi
+      }
+      show(fg, keep)
+      scope.launch {
+        val r =
+            withContext(Dispatchers.Default) {
+              runCatching {
+                StickerMaker.gifAiMasks(s) { cur, total -> ui.post { if (token == bgToken.get()) status = context.getString(R.string.bg_ai_frames, cur, total) } }
+              }
+            }
+        r.onSuccess { gifMasks = it }
+        if (token != bgToken.get()) return@launch
+        bgBusy = false
+        r.onSuccess { m ->
+              show(StickerMaker.applyAiMask(src, m), true)
+              status = context.getString(R.string.bg_ai_frames_done)
+            }
+            .onFailure { e ->
+              status = context.getString(R.string.bg_ai_unavailable)
+              errorDialog = context.getString(R.string.bg_ai_error_title) to (e.message ?: "")
+              bg = Bg.KEEP
+              show(src, true)
+            }
       }
     }
   }
@@ -456,7 +508,7 @@ class EditorController(
         val all = everywhere
         val data = s.gifData
         scope.launch {
-          val fr = withContext(Dispatchers.Default) { StickerMaker.gifPreview(data, solid, tol, all) }
+          val fr = withContext(Dispatchers.Default) { StickerMaker.gifPreview(data, solid, tol, all, if (bg == Bg.AI) gifMasks else null) }
           gifFrames = fr.frames
           gifDelays = fr.delays
           status = context.getString(R.string.editor_preview_loop)
@@ -579,6 +631,7 @@ class EditorController(
         StickerMaker.Options().apply {
           animated = animatedOutput
           solidBackground = bg == Bg.SOLID
+          aiMasks = if (bg == Bg.AI && animatedOutput) gifMasks else null
           everywhere = this@EditorController.everywhere
           tolerance = this@EditorController.tolerance
           speed = this@EditorController.speed
