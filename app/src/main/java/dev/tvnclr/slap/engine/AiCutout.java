@@ -2,6 +2,11 @@ package dev.tvnclr.slap.engine;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.os.Handler;
+import android.os.Looper;
+
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import com.google.android.gms.common.moduleinstall.InstallStatusListener;
 import com.google.android.gms.common.moduleinstall.ModuleInstall;
@@ -15,9 +20,16 @@ import com.google.mlkit.vision.segmentation.subject.SubjectSegmenterOptions;
 
 /**
  * Recorte com IA (ML Kit Subject Segmentation): separa pessoa/animal/objeto de qualquer fundo.
+
  * O modelo vem do Google Play na primeira vez. Callbacks chegam na thread principal.
+ * The model runs on a copy of at most MODEL_SIDE px; its confidence mask goes through the same
+ * cleanup as GIF frames (specks dropped, pinholes closed) and is scaled back onto the photo.
  */
 final class AiCutout {
+
+    private static final int MODEL_SIDE = 1024;
+    private static final Executor WORK = Executors.newSingleThreadExecutor();
+    private static final Handler MAIN = new Handler(Looper.getMainLooper());
 
     interface Callback {
         /** fg com fundo transparente, ou null e a mensagem de erro. */
@@ -28,7 +40,7 @@ final class AiCutout {
 
     static void cut(Context c, Bitmap src, StickerEncoder.Progress progress, Callback cb) {
         SubjectSegmenter seg = SubjectSegmentation.getClient(
-                new SubjectSegmenterOptions.Builder().enableForegroundBitmap().build());
+                new SubjectSegmenterOptions.Builder().enableForegroundConfidenceMask().build());
         ModuleInstallClient mic = ModuleInstall.getClient(c);
         mic.areModulesAvailable(seg)
                 .addOnSuccessListener(r -> {
@@ -77,12 +89,21 @@ final class AiCutout {
 
     private static void run(Context c, SubjectSegmenter seg, Bitmap src, Callback cb) {
         Bitmap in = src.getConfig() == Bitmap.Config.ARGB_8888 ? src : src.copy(Bitmap.Config.ARGB_8888, false);
-        seg.process(InputImage.fromBitmap(in, 0))
-                .addOnSuccessListener(res -> {
+        float k = Math.min(1f, MODEL_SIDE / (float) Math.max(in.getWidth(), in.getHeight()));
+        int mw = Math.max(1, Math.round(in.getWidth() * k)), mh = Math.max(1, Math.round(in.getHeight() * k));
+        Bitmap small = k < 1f ? Bitmap.createScaledBitmap(in, mw, mh, true) : in;
+        seg.process(InputImage.fromBitmap(small, 0))
+                .addOnSuccessListener(WORK, res -> {
                     seg.close();
-                    Bitmap fg = res.getForegroundBitmap();
-                    if (fg == null) cb.done(null, c.getString(dev.tvnclr.slap.R.string.ai_nothing_found));
-                    else cb.done(fg, null);
+                    byte[] alpha = GifAi.cleanAlpha(GifAi.toBytes(res.getForegroundConfidenceMask(), mw * mh), mw, mh);
+                    boolean any = false;
+                    for (byte b : alpha) if (b != 0) { any = true; break; }
+                    Bitmap fg = any ? GifAi.apply(in.copy(Bitmap.Config.ARGB_8888, true), new GifAi.Masks(mw, mh, new byte[][] {alpha}), 0) : null;
+                    if (small != in) small.recycle();
+                    MAIN.post(() -> {
+                        if (fg == null) cb.done(null, c.getString(dev.tvnclr.slap.R.string.ai_nothing_found));
+                        else cb.done(fg, null);
+                    });
                 })
                 .addOnFailureListener(e -> fail(seg, cb, c.getString(dev.tvnclr.slap.R.string.ai_failed, e.getMessage())));
     }

@@ -73,16 +73,7 @@ public final class GifAi {
                 Bitmap small = k < 1f ? Bitmap.createScaledBitmap(full, mw, mh, true) : full;
                 try {
                     SubjectSegmentationResult r = Tasks.await(seg.process(InputImage.fromBitmap(small, 0)));
-                    FloatBuffer fb = r.getForegroundConfidenceMask();
-                    byte[] m = new byte[mw * mh];
-                    if (fb != null) {
-                        fb.rewind();
-                        for (int i = 0; i < m.length && fb.hasRemaining(); i++) {
-                            float v = fb.get();
-                            m[i] = (byte) Math.round(Math.max(0f, Math.min(1f, v)) * 255f);
-                        }
-                    }
-                    conf.add(m);
+                    conf.add(toBytes(r.getForegroundConfidenceMask(), mw * mh));
                     dims[0] = mw;
                     dims[1] = mh;
                 } catch (Exception e) {
@@ -102,15 +93,31 @@ public final class GifAi {
         }
         if (err[0] != null) throw err[0];
         if (conf.isEmpty()) throw new IllegalStateException("no frames");
-        int w = dims[0], h = dims[1], n = w * h;
+        int w = dims[0], h = dims[1];
         byte[][] smooth = MaskOps.smoothInTime(conf.toArray(new byte[0][]), true);
         byte[][] alpha = new byte[smooth.length][];
+        for (int t = 0; t < smooth.length; t++) alpha[t] = cleanAlpha(smooth[t], w, h);
+        return new Masks(w, h, alpha);
+    }
+
+    /** Model confidence to the final alpha, the same cleanup for photos and GIF frames. */
+    static byte[] cleanAlpha(byte[] conf, int w, int h) {
+        int n = w * h;
         int minArea = Math.max(16, Math.round(n * 0.002f));
         int maxHole = Math.max(16, Math.round(n * 0.01f));
-        for (int t = 0; t < smooth.length; t++) {
-            alpha[t] = MaskOps.confidenceToAlpha(smooth[t], w, h, 90, 170, minArea, 0.12f, maxHole);
+        return MaskOps.confidenceToAlpha(conf, w, h, 90, 170, minArea, 0.12f, maxHole);
+    }
+
+    /** Model confidence buffer as bytes 0..255. */
+    static byte[] toBytes(FloatBuffer fb, int n) {
+        byte[] m = new byte[n];
+        if (fb == null) return m;
+        fb.rewind();
+        for (int i = 0; i < n && fb.hasRemaining(); i++) {
+            float v = fb.get();
+            m[i] = (byte) Math.round(Math.max(0f, Math.min(1f, v)) * 255f);
         }
-        return new Masks(w, h, alpha);
+        return m;
     }
 
     /** Frame [idx] with its mask applied (a new bitmap; [frame] is recycled when a copy was needed). */

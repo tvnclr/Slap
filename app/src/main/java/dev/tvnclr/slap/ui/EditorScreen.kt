@@ -167,7 +167,8 @@ fun EditorScreen(packId: String, uri: Uri, editFile: String?, onDone: (saved: Bo
         )
       }
 
-      if (ed.kind != StickerMaker.Kind.VIDEO) {
+      // animated video stickers have no background removal yet; a still taken from a video does
+      if (!(ed.kind == StickerMaker.Kind.VIDEO && animated)) {
         TvSection(stringResource(R.string.editor_background), Icons.Rounded.AutoFixHigh) {
           Column(Modifier.padding(TvSpace.l), verticalArrangement = Arrangement.spacedBy(TvSpace.m)) {
             val modes = if (ed.aiAllowed) EditorController.Bg.entries else listOf(EditorController.Bg.KEEP, EditorController.Bg.SOLID)
