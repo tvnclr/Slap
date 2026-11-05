@@ -9,7 +9,8 @@ plugins {
 // Release signing lives outside the repository (C:\Claude folder\Slap-signing).
 val signingProps = rootProject.file("../Slap-signing/keystore.properties")
 
-// Builds outside main are test builds named "<base>-dev.N", N = commits since the last tag.
+// Builds outside main are test builds named "<base>-dev.N", N = commits since the last stable tag
+// (dev prerelease tags are skipped so the count does not reset when one is published).
 val baseVersion = "1.1.0"
 
 fun git(vararg args: String): String? =
@@ -17,7 +18,7 @@ fun git(vararg args: String): String? =
 
 val appVersion: String =
     if (git("rev-parse", "--abbrev-ref", "HEAD") == "main") baseVersion
-    else "$baseVersion-dev." + (git("describe", "--tags", "--abbrev=0")?.let { git("rev-list", "--count", "$it..HEAD") } ?: "0")
+    else "$baseVersion-dev." + (git("describe", "--tags", "--abbrev=0", "--exclude=*-dev.*")?.let { git("rev-list", "--count", "$it..HEAD") } ?: "0")
 
 android {
   namespace = "dev.tvnclr.slap"
