@@ -79,8 +79,12 @@
   <string name="pack_delete">Delete pack</string>
   <string name="pack_delete_q">Delete \"%1$s\" and all its stickers? If it\'s in WhatsApp, it disappears there too.</string>
   <string name="pick_title">Add from</string>
-  <string name="pick_gallery">Gallery</string>
-  <string name="pick_gallery_desc">Photos, GIFs and videos on the phone</string>
+  <string name="pick_photos">Photos</string>
+  <string name="pick_photos_desc">Pictures and GIFs on the phone</string>
+  <string name="pick_videos">Videos</string>
+  <string name="pick_videos_desc">Only the videos on the phone</string>
+  <string name="pick_gifs">GIFs</string>
+  <string name="pick_gifs_desc">Only the GIFs on the phone</string>
   <string name="pick_files">Files</string>
   <string name="pick_files_desc">Any folder, including Downloads</string>
   <string name="pick_no_app">No file app found.</string>

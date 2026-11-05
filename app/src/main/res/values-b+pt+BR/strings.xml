@@ -78,8 +78,12 @@
   <string name="pack_delete">Excluir pacote</string>
   <string name="pack_delete_q">Excluir \"%1$s\" e todas as figurinhas dele? Se ele já estiver no WhatsApp, some de lá também.</string>
   <string name="pick_title">Adicionar de</string>
-  <string name="pick_gallery">Galeria</string>
-  <string name="pick_gallery_desc">Fotos, GIFs e vídeos do celular</string>
+  <string name="pick_photos">Fotos</string>
+  <string name="pick_photos_desc">Imagens e GIFs do celular</string>
+  <string name="pick_videos">Vídeos</string>
+  <string name="pick_videos_desc">Só os vídeos do celular</string>
+  <string name="pick_gifs">GIFs</string>
+  <string name="pick_gifs_desc">Só os GIFs do celular</string>
   <string name="pick_files">Arquivos</string>
   <string name="pick_files_desc">Qualquer pasta, incluindo Downloads</string>
   <string name="pick_no_app">Nenhum app de arquivos encontrado.</string>

@@ -22,6 +22,8 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.EmojiEmotions
 import androidx.compose.material.icons.rounded.FolderOpen
+import androidx.compose.material.icons.rounded.Gif
+import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.Save
@@ -249,10 +251,23 @@ fun PackScreen(packId: String, onBack: () -> Unit, onEdit: (String, Uri) -> Unit
     TvMenuDialog(
         title = stringResource(R.string.pick_title),
         items =
-            listOf(
-                TvMenuItem(stringResource(R.string.pick_gallery), Icons.Rounded.PhotoLibrary, subtitle = stringResource(R.string.pick_gallery_desc)) {
-                  gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
-                },
+            // the photo picker filters one type at a time, so animated packs get separate video and GIF entries
+            (if (p.animated)
+                listOf(
+                    TvMenuItem(stringResource(R.string.pick_videos), Icons.Rounded.VideoLibrary, subtitle = stringResource(R.string.pick_videos_desc)) {
+                      gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly))
+                    },
+                    TvMenuItem(stringResource(R.string.pick_gifs), Icons.Rounded.Gif, subtitle = stringResource(R.string.pick_gifs_desc)) {
+                      gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.SingleMimeType("image/gif")))
+                    },
+                )
+            else
+                listOf(
+                    TvMenuItem(stringResource(R.string.pick_photos), Icons.Rounded.PhotoLibrary, subtitle = stringResource(R.string.pick_photos_desc)) {
+                      gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    },
+                )) +
+                listOf(
                 TvMenuItem(stringResource(R.string.pick_files), Icons.Rounded.FolderOpen, subtitle = stringResource(R.string.pick_files_desc)) {
                   try {
                     files.launch(if (p.animated) arrayOf("image/gif", "video/*") else arrayOf("image/*", "video/*"))
