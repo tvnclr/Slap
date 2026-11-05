@@ -44,11 +44,10 @@ import dev.tvnclr.slap.R
 import dev.tvnclr.slap.engine.CropView
 import dev.tvnclr.slap.engine.PackStore
 import dev.tvnclr.slap.engine.StickerMaker
-import dev.tvnclr.slap.engine.TextOverlayView
+import dev.tvnclr.slap.engine.TextLayersView
 import dev.tvnclr.ui.Tv
 import dev.tvnclr.ui.TvButton
 import dev.tvnclr.ui.TvButtonStyle
-import dev.tvnclr.ui.TvColorDots
 import dev.tvnclr.ui.TvChoiceChips
 import dev.tvnclr.ui.TvConfirmDialog
 import dev.tvnclr.ui.TvDivider
@@ -60,14 +59,14 @@ import dev.tvnclr.ui.TvShape
 import dev.tvnclr.ui.TvSpace
 import dev.tvnclr.ui.TvSwitchRow
 import dev.tvnclr.ui.TvTextField
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.ui.res.pluralStringResource
 import dev.tvnclr.ui.TvType
 import java.text.NumberFormat
 
 private val SPEEDS = listOf(0.25f, 0.5f, 0.75f, 1f, 1.5f, 2f)
 private const val TOL_MIN = 5
 private const val TOL_MAX = 120
-private val TEXT_COLORS = listOf(0xFFFFFFFF, 0xFF111111, 0xFFFFD54F, 0xFFFF9F43, 0xFFFF5252, 0xFFFF80AB, 0xFF448AFF, 0xFF69F0AE).map { it.toInt() }
-private val FONT_NAMES = listOf(R.string.font_black, R.string.font_bold, R.string.font_condensed, R.string.font_serif, R.string.font_mono, R.string.font_casual, R.string.font_cursive)
 
 @Composable
 fun EditorScreen(packId: String, uri: Uri, editFile: String?, onDone: (saved: Boolean) -> Unit) {
@@ -121,7 +120,7 @@ fun EditorScreen(packId: String, uri: Uri, editFile: String?, onDone: (saved: Bo
           frame.addView(cropView, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT))
           val video = TextureView(ctx).apply { visibility = View.INVISIBLE }
           frame.addView(video, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
-          val textView = TextOverlayView(ctx)
+          val textView = TextLayersView(ctx)
           frame.addView(textView, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
           ed.attachViews(cropView, video, textView)
           frame
@@ -254,61 +253,22 @@ fun EditorScreen(packId: String, uri: Uri, editFile: String?, onDone: (saved: Bo
 
       TvSection(stringResource(R.string.editor_text), Icons.Rounded.TextFields) {
         Column(Modifier.padding(TvSpace.l), verticalArrangement = Arrangement.spacedBy(TvSpace.m)) {
-          TvTextField(
-              ed.text,
-              {
-                ed.text = it
-                ed.updateText()
-              },
-              placeholder = stringResource(R.string.text_placeholder),
-              singleLine = false,
+          TvButton(
+              stringResource(R.string.text_add),
+              onClick = ed::addText,
+              icon = Icons.Rounded.Add,
+              style = TvButtonStyle.TONAL,
+              enabled = !ed.busy,
+              modifier = Modifier.fillMaxWidth(),
           )
-          if (ed.text.isNotBlank()) {
-            Text(stringResource(R.string.text_font), style = TvType.item, color = c.textPrimary)
-            TvChoiceChips(
-                FONT_NAMES.map { stringResource(it) },
-                ed.font,
-                {
-                  ed.font = it
-                  ed.updateText()
-                },
-            )
-            Text(stringResource(R.string.text_size), style = TvType.item, color = c.textPrimary)
-            Slider(
-                value = ed.textSize,
-                onValueChange = {
-                  ed.textSize = it
-                  ed.updateText()
-                },
-                valueRange = 0.05f..0.30f,
-                colors = sliderColors(),
-            )
-            Text(stringResource(R.string.text_color), style = TvType.item, color = c.textPrimary)
-          }
-        }
-        if (ed.text.isNotBlank()) {
-          TvColorDots(
-              colors = TEXT_COLORS.map { androidx.compose.ui.graphics.Color(it) },
-              selected = TEXT_COLORS.indexOf(ed.textColor),
-              onSelect = {
-                ed.textColor = TEXT_COLORS[it]
-                ed.updateText()
-              },
+          Text(
+              if (ed.textCount == 0) stringResource(R.string.text_hint_empty)
+              else pluralStringResource(R.plurals.text_count, ed.textCount, ed.textCount) + " · " + stringResource(R.string.text_hint),
+              style = TvType.caption,
+              color = c.textSecondary,
           )
-          TvDivider(inset = false)
-          TvSwitchRow(
-              stringResource(R.string.text_outline),
-              ed.outline,
-              {
-                ed.outline = it
-                ed.updateText()
-              },
-              subtitle = stringResource(R.string.text_outline_desc),
-          )
-          Text(stringResource(R.string.text_drag_hint), style = TvType.caption, color = c.textSecondary, modifier = Modifier.padding(start = TvSpace.l, end = TvSpace.l, bottom = TvSpace.l))
         }
       }
-
       TvSection(stringResource(R.string.editor_emoji), Icons.Rounded.EmojiEmotions) {
         Column(Modifier.padding(TvSpace.l), verticalArrangement = Arrangement.spacedBy(TvSpace.s)) {
           TvTextField(ed.emoji, { ed.emoji = it }, placeholder = "😀")
@@ -317,6 +277,8 @@ fun EditorScreen(packId: String, uri: Uri, editFile: String?, onDone: (saved: Bo
       }
     }
   }
+
+  ed.textDraft?.let { draft -> TextEditorOverlay(initial = draft, existing = ed.draftIsExisting, onDone = ed::commitText) }
 
   ed.fatal?.let { msg ->
     TvConfirmDialog(

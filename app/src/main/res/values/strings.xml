@@ -209,20 +209,6 @@
   <!-- 1.1.0: text, re-edit, Telegram, backup -->
   <string name="editor_title_edit">Edit sticker</string>
   <string name="editor_text">Text</string>
-  <string name="text_placeholder">Type a caption (optional)</string>
-  <string name="text_font">Font</string>
-  <string name="text_size">Size</string>
-  <string name="text_color">Color</string>
-  <string name="text_outline">Outline</string>
-  <string name="text_outline_desc">Contrasting border so it reads on any image</string>
-  <string name="text_drag_hint">Drag the text on the image to move it.</string>
-  <string name="font_black">Black</string>
-  <string name="font_bold">Bold</string>
-  <string name="font_condensed">Condensed</string>
-  <string name="font_serif">Serif</string>
-  <string name="font_mono">Mono</string>
-  <string name="font_casual">Casual</string>
-  <string name="font_cursive">Cursive</string>
   <string name="sticker_menu_edit">Edit</string>
   <string name="sticker_menu_edit_desc">Change framing, background, text or clip</string>
   <string name="sticker_menu_edit_old">Made before version 1.1.0, so the original was not kept</string>
@@ -250,4 +236,17 @@
     <item quantity="one">%d already existed.</item>
     <item quantity="other">%d already existed.</item>
   </plurals>
-</resources>
+  <string name="text_add">Add text</string>
+  <string name="text_hint_empty">Opens a full-screen editor with fonts, colors and backgrounds. Add as many texts as you want.</string>
+  <string name="text_hint">Tap one on the image to edit it. Drag to move, pinch to resize and rotate, drop it on the bin to delete.</string>
+  <plurals name="text_count">
+    <item quantity="one">%d text</item>
+    <item quantity="other">%d texts</item>
+  </plurals>
+  <string name="text_done">Done</string>
+  <string name="text_type_here">Type here</string>
+  <string name="text_align">Alignment</string>
+  <string name="text_style">Background</string>
+  <string name="text_delete">Delete text</string>
+  <string name="about_fonts">Fonts</string>
+  <string name="about_fonts_desc">%1$d open fonts · SIL OFL 1.1 and Apache 2.0</string></resources>

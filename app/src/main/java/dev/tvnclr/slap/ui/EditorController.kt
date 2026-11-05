@@ -24,7 +24,7 @@ import dev.tvnclr.slap.engine.CropView
 import dev.tvnclr.slap.engine.PackStore
 import dev.tvnclr.slap.engine.StickerMaker
 import dev.tvnclr.slap.engine.TextLayer
-import dev.tvnclr.slap.engine.TextOverlayView
+import dev.tvnclr.slap.engine.TextLayersView
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.atomic.AtomicInteger
@@ -73,29 +73,49 @@ class EditorController(
   var lenMs by mutableLongStateOf(3000L)
   var speed by mutableFloatStateOf(1f)
 
-  // ── text box ──
-  var text by mutableStateOf("")
-  var font by mutableIntStateOf(0)
-  var textSize by mutableFloatStateOf(0.12f)
-  var textColor by mutableIntStateOf(0xFFFFFFFF.toInt())
-  var outline by mutableStateOf(true)
-  private var textX = 0.5f
-  private var textY = 0.82f
+  // ── text boxes (shared with the overlay view, which edits them in place) ──
+  private val texts = ArrayList<TextLayer>()
+  var textCount by mutableIntStateOf(0)
+    private set
+  /** The box open in the full-screen text editor, or null. */
+  var textDraft by mutableStateOf<TextLayer?>(null)
+    private set
+  /** Index of the box being edited, -1 for a new one. */
+  private var draftIndex = -1
+  val draftIsExisting: Boolean
+    get() = draftIndex >= 0
 
-  fun textLayer(): TextLayer =
-      TextLayer().also {
-        it.text = text
-        it.font = font
-        it.size = textSize
-        it.color = textColor
-        it.outline = outline
-        it.x = textX
-        it.y = textY
-      }
+  fun addText() {
+    draftIndex = -1
+    textDraft = TextLayer().also { it.y = if (texts.isEmpty()) 0.5f else (0.5f + 0.12f * (texts.size % 3)).coerceAtMost(0.85f) }
+  }
 
-  /** Call after changing any text setting so the preview redraws. */
-  fun updateText() {
-    overlay?.setLayer(textLayer())
+  fun editText(index: Int) {
+    if (index !in texts.indices) return
+    draftIndex = index
+    textDraft = texts[index].copy()
+    overlay?.setHidden(index)
+  }
+
+  /** Closes the full-screen editor; blank text removes the box. */
+  fun commitText(layer: TextLayer?) {
+    val i = draftIndex
+    if (layer == null || layer.isEmpty) {
+      if (i in texts.indices) texts.removeAt(i)
+    } else if (i in texts.indices) {
+      texts[i] = layer
+    } else {
+      texts.add(layer)
+    }
+    textDraft = null
+    draftIndex = -1
+    overlay?.setHidden(-1)
+    textsChanged()
+  }
+
+  private fun textsChanged() {
+    textCount = texts.size
+    overlay?.invalidate()
   }
   var emoji by mutableStateOf("😀")
 
@@ -133,20 +153,23 @@ class EditorController(
     private set
 
   private var video: TextureView? = null
-  private var overlay: TextOverlayView? = null
+  private var overlay: TextLayersView? = null
   /** Saved framing waiting for the first frame (re-edit). */
   private var pendingMatrix: Matrix? = null
 
-  fun attachViews(cropView: CropView, videoView: TextureView, textView: TextOverlayView) {
+  fun attachViews(cropView: CropView, videoView: TextureView, textView: TextLayersView) {
     crop = cropView
     video = videoView
     overlay = textView
     cropView.setOnChange { applyVideoTransform() }
-    textView.setOnMoved { x, y ->
-      textX = x
-      textY = y
-    }
-    textView.setLayer(textLayer())
+    textView.setLayers(texts)
+    textView.setListener(
+        object : TextLayersView.Listener {
+          override fun onTap(index: Int) = editText(index)
+
+          override fun onChanged() = textsChanged()
+        }
+    )
     preview?.let { show(it, false) }
   }
 
@@ -239,15 +262,9 @@ class EditorController(
     startMs = o.optLong("startMs", 0L)
     lenMs = o.optLong("lengthMs", lenMs)
     emoji = o.optString("emoji", emoji).replace(",", " ")
-    val t = TextLayer.fromJson(o.optJSONObject("text"))
-    text = t.text
-    font = t.font
-    textSize = t.size
-    textColor = t.color
-    outline = t.outline
-    textX = t.x
-    textY = t.y
-    updateText()
+    texts.clear()
+    texts.addAll(TextLayer.listFrom(o))
+    textsChanged()
     o.optJSONArray("matrix")?.let { a ->
       if (a.length() == 9) pendingMatrix = Matrix().apply { setValues(FloatArray(9) { a.optDouble(it).toFloat() }) }
     }
@@ -264,7 +281,7 @@ class EditorController(
       put("startMs", startMs)
       put("lengthMs", lenMs)
       put("emoji", em)
-      put("text", textLayer().toJson())
+      put("texts", TextLayer.toJson(texts))
       put("matrix", JSONArray().apply { v.forEach { put(it.toDouble()) } })
     }
   }
@@ -567,7 +584,7 @@ class EditorController(
           speed = this@EditorController.speed
           startMs = this@EditorController.startMs
           lengthMs = effectiveLen
-          text = textLayer().takeUnless { it.isEmpty }
+          texts = this@EditorController.texts.filter { !it.isEmpty }.map { it.copy() }
         }
     val base = c.outputMatrix(StickerMaker.SIZE)
     val em = StickerMaker.parseEmoji(emoji)
