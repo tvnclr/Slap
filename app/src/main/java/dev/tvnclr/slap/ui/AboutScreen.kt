@@ -32,7 +32,7 @@ private const val SOURCE_URL = "https://github.com/tvnclr/Slap"
 @Composable
 fun AboutScreen(onBack: () -> Unit) {
   val context = LocalContext.current
-  val version = remember { runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull().orEmpty() }
+  val version = remember { runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull().orEmpty().replace(Regex("-dev\\.(\\d+)$"), " (dev \$1)") }
   TvPage(title = stringResource(R.string.about_title), onBack = onBack) {
     TvSection(stringResource(R.string.app_name), Icons.Rounded.Info) {
       TvRow(
