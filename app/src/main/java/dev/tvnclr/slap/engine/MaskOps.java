@@ -8,6 +8,22 @@ final class MaskOps {
 
     private MaskOps() {}
 
+    /** Share of pixels that are (almost) fully transparent, alpha below 16. */
+    static float transparentFraction(int[] argb) {
+        if (argb.length == 0) return 0f;
+        int n = 0;
+        for (int c : argb) if ((c >>> 24) < 16) n++;
+        return n / (float) argb.length;
+    }
+
+    /** Share of mask values that are (almost) fully opaque, 240 or more. */
+    static float opaqueFraction(byte[] alpha) {
+        if (alpha.length == 0) return 0f;
+        int n = 0;
+        for (byte b : alpha) if ((b & 0xFF) >= 240) n++;
+        return n / (float) alpha.length;
+    }
+
     /**
      * Labels the 4-connected regions where {@code on[i] == want}. Fills [label] with 1-based labels
      * (0 for the other value) and returns the size of each region (index = label - 1) plus, in

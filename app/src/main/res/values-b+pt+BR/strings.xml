@@ -250,4 +250,11 @@
   <string name="text_style">Fundo</string>
   <string name="text_delete">Apagar texto</string>
   <string name="about_fonts">Fontes</string>
-  <string name="about_fonts_desc">%1$d fontes abertas · SIL OFL 1.1 e Apache 2.0</string></resources>
+  <string name="about_fonts_desc">%1$d fontes abertas · SIL OFL 1.1 e Apache 2.0</string>
+  <!-- 1.1.0: robustez -->
+  <string name="close">Fechar</string>
+  <string name="share_unreadable">O Slap não consegue ler este arquivo: o app de onde você compartilhou não deu acesso a ele. Salve o arquivo no celular e adicione por um pacote, em Arquivos.</string>
+  <string name="editor_no_permission">O Slap não tem mais permissão pra ler este arquivo. Escolha de novo em Fotos ou Arquivos.</string>
+  <string name="bg_nothing_removed">Nada foi removido: a cor das bordas não bate com o fundo. Aumente a tolerância ou tente a IA.</string>
+  <string name="bg_failed_title">Não deu pra remover o fundo</string>
+  <string name="ai_whole_image">A IA considerou a imagem inteira como o objeto, então nada foi removido. Para fundo liso, use Cor lisa.</string></resources>

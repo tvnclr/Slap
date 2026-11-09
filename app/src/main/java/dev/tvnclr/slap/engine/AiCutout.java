@@ -98,10 +98,12 @@ final class AiCutout {
                     byte[] alpha = GifAi.cleanAlpha(GifAi.toBytes(res.getForegroundConfidenceMask(), mw * mh), mw, mh);
                     boolean any = false;
                     for (byte b : alpha) if (b != 0) { any = true; break; }
-                    Bitmap fg = any ? GifAi.apply(in.copy(Bitmap.Config.ARGB_8888, true), new GifAi.Masks(mw, mh, new byte[][] {alpha}), 0) : null;
+                    // a drawing on a plain background can come back as one big "subject": nothing removed
+                    boolean whole = MaskOps.opaqueFraction(alpha) > 0.97f;
+                    Bitmap fg = any && !whole ? GifAi.apply(in.copy(Bitmap.Config.ARGB_8888, true), new GifAi.Masks(mw, mh, new byte[][] {alpha}), 0) : null;
                     if (small != in) small.recycle();
                     MAIN.post(() -> {
-                        if (fg == null) cb.done(null, c.getString(dev.tvnclr.slap.R.string.ai_nothing_found));
+                        if (fg == null) cb.done(null, c.getString(whole ? dev.tvnclr.slap.R.string.ai_whole_image : dev.tvnclr.slap.R.string.ai_nothing_found));
                         else cb.done(fg, null);
                     });
                 })

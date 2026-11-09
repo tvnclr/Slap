@@ -9,6 +9,8 @@ import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
+import android.util.Log
 import android.view.Surface
 import android.view.TextureView
 import android.view.View
@@ -28,7 +30,11 @@ import dev.tvnclr.slap.engine.TextLayer
 import dev.tvnclr.slap.engine.TextLayersView
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.math.roundToInt
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -226,6 +232,9 @@ class EditorController(
               StickerMaker.Problem.Code.VIDEO_DURATION, StickerMaker.Problem.Code.VIDEO_FRAMES -> context.getString(R.string.editor_video_unreadable)
               else -> context.getString(R.string.editor_open_failed, p.message)
             }
+      } catch (e: SecurityException) {
+        Log.w(TAG, "no read access to $uri", e)
+        fatal = context.getString(R.string.editor_no_permission)
       } catch (t: Throwable) {
         fatal = context.getString(R.string.editor_open_failed, t.message)
       }
@@ -242,6 +251,7 @@ class EditorController(
   }
 
   private fun show(b: Bitmap, keep: Boolean) {
+    Log.d(TAG, "show ${b.width}x${b.height} keep=$keep view=${crop != null}")
     preview = b
     val c = crop ?: return
     c.setSource(b, keep)
@@ -349,11 +359,37 @@ class EditorController(
         bgBusy = true
         val tol = tolerance
         val all = everywhere
+        Log.d(TAG, "solid start token=$token ${src.width}x${src.height} tol=$tol everywhere=$all")
         scope.launch {
-          val out = withContext(Dispatchers.Default) { StickerMaker.removeSolid(src, tol, all) }
-          if (token != bgToken.get()) return@launch
-          show(out, keep)
+          val t0 = SystemClock.elapsedRealtime()
+          val r =
+              try {
+                Result.success(withContext(BG) { StickerMaker.removeSolid(src, tol, all).let { it to StickerMaker.transparentFraction(it) } })
+              } catch (e: CancellationException) {
+                throw e
+              } catch (e: Throwable) {
+                Result.failure(e)
+              }
+          if (token != bgToken.get()) {
+            Log.d(TAG, "solid discarded token=$token current=${bgToken.get()}")
+            return@launch
+          }
           bgBusy = false
+          r.onSuccess { (out, clear) ->
+                Log.d(TAG, "solid done token=$token clear=${(clear * 100).roundToInt()}% in ${SystemClock.elapsedRealtime() - t0} ms")
+                show(out, keep)
+                if (clear < NOTHING_REMOVED) {
+                  status = context.getString(R.string.bg_nothing_removed)
+                  context.toast(status)
+                }
+              }
+              .onFailure { e ->
+                Log.w(TAG, "solid failed token=$token", e)
+                status = context.getString(R.string.bg_failed_title)
+                errorDialog = context.getString(R.string.bg_failed_title) to (e.message ?: e.javaClass.simpleName)
+                bg = Bg.KEEP
+                show(src, keep)
+              }
         }
       }
       Bg.AI -> {
@@ -368,9 +404,14 @@ class EditorController(
         }
         bgBusy = true
         status = context.getString(R.string.bg_ai_cutting)
+        Log.d(TAG, "ai start token=$token ${src.width}x${src.height}")
         StickerMaker.cutWithAi(context, src, { msg -> ui.post { status = msg } }) { fg, err ->
-          if (token != bgToken.get()) return@cutWithAi
+          if (token != bgToken.get()) {
+            Log.d(TAG, "ai discarded token=$token current=${bgToken.get()}")
+            return@cutWithAi
+          }
           bgBusy = false
+          Log.d(TAG, "ai done token=$token ok=${fg != null} err=$err")
           if (fg == null) {
             status = context.getString(R.string.bg_ai_unavailable)
             errorDialog = context.getString(R.string.bg_ai_error_title) to (err ?: "")
@@ -409,12 +450,13 @@ class EditorController(
       show(fg, keep)
       scope.launch {
         val r =
-            withContext(Dispatchers.Default) {
+            withContext(BG) {
               runCatching {
+                Log.d(TAG, "gif ai start token=$token frames=${s.gifFrames}")
                 StickerMaker.gifAiMasks(s) { cur, total -> ui.post { if (token == bgToken.get()) status = context.getString(R.string.bg_ai_frames, cur, total) } }
               }
             }
-        r.onSuccess { gifMasks = it }
+        r.onSuccess { gifMasks = it }.onFailure { Log.w(TAG, "gif ai failed token=$token", it) }
         if (token != bgToken.get()) return@launch
         bgBusy = false
         r.onSuccess { m ->
@@ -706,3 +748,14 @@ class EditorController(
 
 /** Above this, the original is not kept and the sticker cannot be re-edited. */
 private const val MAX_SOURCE_BYTES = 100L * 1024 * 1024
+
+private const val TAG = "Slap/bg"
+
+/**
+ * Background removal runs on its own pool instead of Dispatchers.Default: a stuck job (the GIF AI
+ * waits on ML Kit) can then never starve the flat-color removal or anything else.
+ */
+private val BG = Executors.newCachedThreadPool { r -> Thread(r, "slap-bg").apply { isDaemon = true } }.asCoroutineDispatcher()
+
+/** Below this share of transparent pixels the removal is treated as having removed nothing. */
+private const val NOTHING_REMOVED = 0.01f

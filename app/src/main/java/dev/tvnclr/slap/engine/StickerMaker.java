@@ -200,6 +200,14 @@ public final class StickerMaker {
         return BgRemover.solid(src, tolerance, everywhere);
     }
 
+    /** Share of [b]'s pixels that are transparent, to tell when a background removal removed nothing. */
+    public static float transparentFraction(Bitmap b) {
+        int w = b.getWidth(), h = b.getHeight();
+        int[] px = new int[w * h];
+        b.getPixels(px, 0, w, 0, 0, w, h);
+        return MaskOps.transparentFraction(px);
+    }
+
     public static void cutWithAi(Context c, Bitmap src, Message progress, CutCallback cb) {
         AiCutout.cut(c, src, progress::on, cb::done);
     }

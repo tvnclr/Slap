@@ -22,7 +22,7 @@ private object Routes {
 
   fun pack(id: String) = "pack/$id"
 
-  fun editor(pack: String, uri: Uri, edit: String? = null) = "editor/$pack?uri=${Uri.encode(uri.toString())}&edit=${edit.orEmpty()}"
+  fun editor(pack: String, uri: Uri, edit: String? = null) = "editor/$pack?uri=${RouteArg.encode(uri.toString())}&edit=${edit.orEmpty()}"
 }
 
 /**
@@ -75,7 +75,7 @@ fun SlapApp(sharedUri: Uri?, onFinish: () -> Unit) {
                 },
             ),
     ) { entry ->
-      val uri = Uri.parse(Uri.decode(entry.arguments?.getString("uri").orEmpty()))
+      val uri = Uri.parse(RouteArg.decode(entry.arguments?.getString("uri").orEmpty()))
       EditorScreen(
           packId = entry.arguments?.getString("pack").orEmpty(),
           uri = uri,

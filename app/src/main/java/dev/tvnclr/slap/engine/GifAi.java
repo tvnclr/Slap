@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * AI cutout for every frame of a GIF. The model only works on single images, so each frame is cut
@@ -50,6 +51,8 @@ public final class GifAi {
     /** Frames are scaled down to this side for the model; the mask is scaled back up. */
     private static final int MODEL_SIDE = 384;
     private static final int MAX_FRAMES = 300;
+    /** A frame the model has not answered in this long fails the whole run instead of hanging it. */
+    private static final long FRAME_TIMEOUT_S = 15;
 
     private GifAi() {}
 
@@ -72,7 +75,7 @@ public final class GifAi {
                 Bitmap full = Bitmap.createBitmap(argb, w, h, Bitmap.Config.ARGB_8888);
                 Bitmap small = k < 1f ? Bitmap.createScaledBitmap(full, mw, mh, true) : full;
                 try {
-                    SubjectSegmentationResult r = Tasks.await(seg.process(InputImage.fromBitmap(small, 0)));
+                    SubjectSegmentationResult r = Tasks.await(seg.process(InputImage.fromBitmap(small, 0)), FRAME_TIMEOUT_S, TimeUnit.SECONDS);
                     conf.add(toBytes(r.getForegroundConfidenceMask(), mw * mh));
                     dims[0] = mw;
                     dims[1] = mh;

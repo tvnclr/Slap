@@ -86,4 +86,22 @@ public class MaskOpsTest {
         assertEquals(255, a[15 * W + 15] & 0xFF);
         assertEquals(0, a[0] & 0xFF);
     }
+
+    @Test
+    public void transparentFractionCountsClearPixels() {
+        int[] px = {0x00000000, 0x0F112233, 0xFF112233, 0x80112233};
+        assertEquals(0.5f, MaskOps.transparentFraction(px), 1e-6f);
+        assertEquals(0f, MaskOps.transparentFraction(new int[0]), 0f);
+    }
+
+    @Test
+    public void opaqueFractionSpotsWholeImageCutouts() {
+        byte[] whole = new byte[100];
+        java.util.Arrays.fill(whole, (byte) 255);
+        whole[0] = 0;
+        assertTrue(MaskOps.opaqueFraction(whole) > 0.97f);
+        byte[] half = new byte[100];
+        for (int i = 0; i < 50; i++) half[i] = (byte) 250;
+        assertEquals(0.5f, MaskOps.opaqueFraction(half), 1e-6f);
+    }
 }
