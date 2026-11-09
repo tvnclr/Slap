@@ -4,6 +4,20 @@ WhatsApp stickers from your photos, GIFs and videos — without the white border
 
 Slap turns a picture, a GIF or a video clip into a WhatsApp sticker, groups stickers into packs and sends the packs straight to WhatsApp. Everything happens on the phone.
 
+## Screenshots
+
+<p align="center">
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="24%" alt="Packs" />
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="24%" alt="A static pack" />
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" width="24%" alt="Sticker editor: framing and transparent background" />
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" width="24%" alt="Animated sticker: clip and speed" />
+</p>
+<p align="center">
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" width="24%" alt="An animated pack" />
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" width="24%" alt="Settings: themes, accent colors, backgrounds" />
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/7.png" width="24%" alt="Light theme with another accent color" />
+</p>
+
 ## Features
 
 - **Static and animated packs.** Photos become static stickers; GIFs and video clips become animated ones. Packs follow WhatsApp's rules (3 to 30 stickers, 512×512 WebP, up to 100 KB static / 500 KB animated, up to 10 s).
