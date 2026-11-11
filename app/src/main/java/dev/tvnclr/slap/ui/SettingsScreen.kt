@@ -1,6 +1,16 @@
 package dev.tvnclr.slap.ui
 
 import android.animation.ValueAnimator
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.rounded.Backup
+import androidx.compose.material.icons.rounded.Restore
+import androidx.compose.material.icons.rounded.Storage
+import dev.tvnclr.slap.engine.Backup
+import dev.tvnclr.ui.TvNote
+import java.time.LocalDate
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -68,6 +78,34 @@ fun SettingsScreen(onBack: () -> Unit) {
       )
   val animationsOn = remember { ValueAnimator.areAnimatorsEnabled() }
 
+  val backupLauncher =
+      rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { dst ->
+        if (dst == null) return@rememberLauncherForActivityResult
+        scope.launch {
+          val r =
+              withContext(Dispatchers.IO) {
+                runCatching { context.contentResolver.openOutputStream(dst).use { os -> Backup.write(context, requireNotNull(os) { "no destination" }) } }
+              }
+          r.onSuccess { context.toast(context.resources.getQuantityString(R.plurals.backup_done, it.packs, it.packs)) }
+              .onFailure { context.toast(context.getString(R.string.backup_failed, it.message)) }
+        }
+      }
+  val restoreLauncher =
+      rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { src ->
+        if (src == null) return@rememberLauncherForActivityResult
+        scope.launch {
+          val r =
+              withContext(Dispatchers.IO) {
+                runCatching { context.contentResolver.openInputStream(src).use { s -> Backup.restore(context, requireNotNull(s) { "no source" }) } }
+              }
+          r.onSuccess {
+                val msg = context.resources.getQuantityString(R.plurals.restore_done, it.packs, it.packs)
+                context.toast(if (it.skipped > 0) msg + " " + context.resources.getQuantityString(R.plurals.restore_skipped, it.skipped, it.skipped) else msg)
+              }
+              .onFailure { context.toast(context.getString(R.string.restore_failed, it.message)) }
+        }
+      }
+
   TvPage(title = stringResource(R.string.settings_title), subtitle = stringResource(R.string.settings_subtitle), onBack = onBack) {
     TvSection(stringResource(R.string.appearance), Icons.Rounded.Palette) {
       TvRow(stringResource(R.string.theme), stringResource(R.string.theme_desc), Icons.Rounded.DarkMode)
@@ -97,6 +135,18 @@ fun SettingsScreen(onBack: () -> Unit) {
         )
         if (!animationsOn) TvCallout(stringResource(R.string.background_anim_off), TvStatus.NEUTRAL)
       }
+    }
+
+    TvSection(stringResource(R.string.data), Icons.Rounded.Storage) {
+      TvRow(stringResource(R.string.backup), stringResource(R.string.backup_desc), Icons.Rounded.Backup, onClick = { backupLauncher.launch("slap-backup-${LocalDate.now()}.zip") })
+      TvDivider()
+      TvRow(
+          stringResource(R.string.restore),
+          stringResource(R.string.restore_desc),
+          Icons.Rounded.Restore,
+          onClick = { restoreLauncher.launch(arrayOf("application/zip", "application/octet-stream", "application/x-zip-compressed")) },
+      )
+      TvNote(stringResource(R.string.backup_note))
     }
   }
 }

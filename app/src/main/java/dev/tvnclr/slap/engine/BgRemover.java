@@ -15,10 +15,26 @@ final class BgRemover {
 
     /** Devolve um bitmap novo com o fundo transparente; se a borda ja for transparente, devolve uma copia. */
     static Bitmap solid(Bitmap src, int tol, boolean everywhere) {
+        return solid(src, tol, everywhere, 0);
+    }
+
+    /** Background color of a frame (most common border color), or 0 when the border is transparent. */
+    static int referenceColor(Bitmap src) {
         int w = src.getWidth(), h = src.getHeight();
         int[] px = new int[w * h];
         src.getPixels(px, 0, w, 0, 0, w, h);
-        int ref = borderColor(px, w, h);
+        return borderColor(px, w, h);
+    }
+
+    /**
+     * Same as {@link #solid(Bitmap, int, boolean)} with a fixed background color [ref] (0 = find it
+     * on this frame). GIFs pass the color of their first frame, so the cutout does not flicker.
+     */
+    static Bitmap solid(Bitmap src, int tol, boolean everywhere, int ref) {
+        int w = src.getWidth(), h = src.getHeight();
+        int[] px = new int[w * h];
+        src.getPixels(px, 0, w, 0, 0, w, h);
+        if (ref == 0) ref = borderColor(px, w, h);
         if (ref != 0) {
             byte[] gone = new byte[w * h]; // 1 = fundo
             if (everywhere) {
@@ -26,12 +42,24 @@ final class BgRemover {
             } else {
                 flood(px, gone, w, h, ref, tol);
             }
+            cleanup(gone, w, h);
             feather(px, gone, w, h, ref, tol);
             for (int i = 0; i < px.length; i++) if (gone[i] == 1) px[i] = 0;
         }
         Bitmap out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         out.setPixels(px, 0, w, 0, 0, w, h);
         return out;
+    }
+
+    /** Removes the loose specks the color match leaves behind and closes pinholes in the subject. */
+    private static void cleanup(byte[] gone, int w, int h) {
+        int n = w * h;
+        boolean[] keep = new boolean[n];
+        for (int i = 0; i < n; i++) keep[i] = gone[i] == 0;
+        int small = Math.max(16, Math.round(n * 0.0008f));
+        MaskOps.dropSpecks(keep, w, h, small, 0f);
+        MaskOps.fillHoles(keep, w, h, small);
+        for (int i = 0; i < n; i++) gone[i] = (byte) (keep[i] ? 0 : 1);
     }
 
     private static int dist(int a, int b) {

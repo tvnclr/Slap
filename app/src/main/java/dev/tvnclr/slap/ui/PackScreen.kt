@@ -22,10 +22,13 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.EmojiEmotions
 import androidx.compose.material.icons.rounded.FolderOpen
+import androidx.compose.material.icons.rounded.Gif
+import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,6 +49,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import dev.tvnclr.slap.R
 import dev.tvnclr.slap.engine.PackStore
 import dev.tvnclr.slap.engine.StickerMaker
+import dev.tvnclr.slap.engine.Telegram
 import dev.tvnclr.slap.engine.WhatsApp
 import dev.tvnclr.ui.Tv
 import dev.tvnclr.ui.TvButton
@@ -72,7 +76,7 @@ import kotlinx.coroutines.withContext
 private const val COLUMNS = 3
 
 @Composable
-fun PackScreen(packId: String, onBack: () -> Unit, onEdit: (String, Uri) -> Unit) {
+fun PackScreen(packId: String, onBack: () -> Unit, onEdit: (String, Uri) -> Unit, onEditSticker: (String, String, Uri) -> Unit) {
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
   var refresh by remember { mutableIntStateOf(0) }
@@ -138,6 +142,29 @@ fun PackScreen(packId: String, onBack: () -> Unit, onEdit: (String, Uri) -> Unit
         TvOverflowMenu(
             listOf(
                 TvMenuItem(stringResource(R.string.pack_rename), Icons.Rounded.Edit) { renaming = true },
+                TvMenuItem(
+                    stringResource(R.string.pack_telegram),
+                    Icons.AutoMirrored.Rounded.Send,
+                    subtitle = if (p.animated) stringResource(R.string.pack_telegram_animated) else null,
+                ) {
+                  when {
+                    p.animated -> context.toast(context.getString(R.string.pack_telegram_animated))
+                    n == 0 -> context.toast(context.getString(R.string.pack_telegram_empty))
+                    !Telegram.isInstalled(context) -> context.toast(context.getString(R.string.pack_no_telegram))
+                    else ->
+                        scope.launch {
+                          val i = withContext(Dispatchers.IO) { runCatching { Telegram.importIntent(context, p) } }
+                          i.onSuccess {
+                                try {
+                                  context.startActivity(it)
+                                } catch (e: ActivityNotFoundException) {
+                                  context.toast(context.getString(R.string.pack_no_telegram))
+                                }
+                              }
+                              .onFailure { context.toast(context.getString(R.string.error_generic, it.message)) }
+                        }
+                  }
+                },
                 TvMenuItem(stringResource(R.string.pack_delete), Icons.Rounded.Delete, destructive = true) { deletingPack = true },
             )
         )
@@ -224,10 +251,23 @@ fun PackScreen(packId: String, onBack: () -> Unit, onEdit: (String, Uri) -> Unit
     TvMenuDialog(
         title = stringResource(R.string.pick_title),
         items =
-            listOf(
-                TvMenuItem(stringResource(R.string.pick_gallery), Icons.Rounded.PhotoLibrary, subtitle = stringResource(R.string.pick_gallery_desc)) {
-                  gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
-                },
+            // the photo picker filters one type at a time, so animated packs get separate video and GIF entries
+            (if (p.animated)
+                listOf(
+                    TvMenuItem(stringResource(R.string.pick_videos), Icons.Rounded.VideoLibrary, subtitle = stringResource(R.string.pick_videos_desc)) {
+                      gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly))
+                    },
+                    TvMenuItem(stringResource(R.string.pick_gifs), Icons.Rounded.Gif, subtitle = stringResource(R.string.pick_gifs_desc)) {
+                      gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.SingleMimeType("image/gif")))
+                    },
+                )
+            else
+                listOf(
+                    TvMenuItem(stringResource(R.string.pick_photos), Icons.Rounded.PhotoLibrary, subtitle = stringResource(R.string.pick_photos_desc)) {
+                      gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    },
+                )) +
+                listOf(
                 TvMenuItem(stringResource(R.string.pick_files), Icons.Rounded.FolderOpen, subtitle = stringResource(R.string.pick_files_desc)) {
                   try {
                     files.launch(if (p.animated) arrayOf("image/gif", "video/*") else arrayOf("image/*", "video/*"))
@@ -245,6 +285,17 @@ fun PackScreen(packId: String, onBack: () -> Unit, onEdit: (String, Uri) -> Unit
         title = null,
         items =
             listOf(
+                run {
+                  val src = PackStore.sourceFile(p, s.file)
+                  val editable = src.isFile
+                  TvMenuItem(
+                      stringResource(R.string.sticker_menu_edit),
+                      Icons.Rounded.Tune,
+                      subtitle = stringResource(if (editable) R.string.sticker_menu_edit_desc else R.string.sticker_menu_edit_old),
+                  ) {
+                    if (editable) onEditSticker(packId, s.file, Uri.fromFile(src)) else context.toast(context.getString(R.string.sticker_menu_edit_old))
+                  }
+                },
                 TvMenuItem(stringResource(R.string.sticker_menu_emoji), Icons.Rounded.EmojiEmotions, subtitle = stringResource(R.string.sticker_menu_emoji_desc, s.emoji.replace(",", " "))) { emojiFor = s },
                 TvMenuItem(stringResource(R.string.sticker_menu_export), Icons.Rounded.Save, subtitle = stringResource(R.string.sticker_menu_export_desc)) {
                   exportFor = s

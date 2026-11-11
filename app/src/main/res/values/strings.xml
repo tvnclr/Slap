@@ -32,7 +32,6 @@
   <string name="home_settings_desc">Theme, accent color, background</string>
   <string name="home_about">About</string>
   <string name="home_about_desc">Version, source code</string>
-  <string name="home_share_tip_title">Share to create</string>
   <string name="home_share_tip">In any app, share a GIF, video or photo and pick \"Create sticker\".</string>
   <string name="pack_kind_static">Static</string>
   <string name="pack_kind_animated">Animated</string>
@@ -80,8 +79,12 @@
   <string name="pack_delete">Delete pack</string>
   <string name="pack_delete_q">Delete \"%1$s\" and all its stickers? If it\'s in WhatsApp, it disappears there too.</string>
   <string name="pick_title">Add from</string>
-  <string name="pick_gallery">Gallery</string>
-  <string name="pick_gallery_desc">Photos, GIFs and videos on the phone</string>
+  <string name="pick_photos">Photos</string>
+  <string name="pick_photos_desc">Pictures and GIFs on the phone</string>
+  <string name="pick_videos">Videos</string>
+  <string name="pick_videos_desc">Only the videos on the phone</string>
+  <string name="pick_gifs">GIFs</string>
+  <string name="pick_gifs_desc">Only the GIFs on the phone</string>
   <string name="pick_files">Files</string>
   <string name="pick_files_desc">Any folder, including Downloads</string>
   <string name="pick_no_app">No file app found.</string>
@@ -122,8 +125,10 @@
   <string name="bg_solid">Flat color</string>
   <string name="bg_ai">AI</string>
   <string name="bg_keep_hint">Keeps the background as it is. If it\'s already transparent, it stays transparent.</string>
-  <string name="bg_solid_hint">Makes the background color transparent, starting from the edges. Good for flat backgrounds (white, green screen, a single color). Raise the tolerance if some background is left; lower it if it eats into the drawing.</string>
-  <string name="bg_ai_hint">Cuts a person, animal or object out of any background. The first time it downloads the model from Google Play (needs internet).</string>
+  <string name="bg_solid_hint">Makes the background color transparent, starting from the edges. Good for flat backgrounds (white, green screen, a single color). Raise the tolerance if some background is left; lower it if it eats into the drawing. For real scenes (floor, room, street) use AI.</string>
+  <string name="bg_ai_hint">Cuts a person, animal or object out of any background. On GIFs it cuts every frame, which takes a few seconds. The first time it downloads the model from Google Play (needs internet).</string>
+  <string name="bg_ai_frames">Cutting frame %1$d of %2$d with AI…</string>
+  <string name="bg_ai_frames_done">Background removed on every frame. Use Preview to check it.</string>
   <string name="bg_tolerance">Tolerance: %1$d</string>
   <string name="bg_everywhere">Everywhere in the image</string>
   <string name="bg_everywhere_desc">Also removes that color inside the drawing (e.g. between the arms)</string>
@@ -202,4 +207,55 @@
   <string name="share_nothing">Nothing to open.</string>
   <string name="share_new_pack_sub_moving">Animated or static</string>
   <string name="share_new_pack_sub_any">Static or animated</string>
-</resources>
+
+  <!-- 1.1.0: text, re-edit, Telegram, backup -->
+  <string name="editor_title_edit">Edit sticker</string>
+  <string name="editor_text">Text</string>
+  <string name="sticker_menu_edit">Edit</string>
+  <string name="sticker_menu_edit_desc">Change framing, background, text or clip</string>
+  <string name="sticker_menu_edit_old">Made before version 1.1.0, so the original was not kept</string>
+  <string name="pack_telegram">Send to Telegram</string>
+  <string name="pack_telegram_animated">Telegram doesn\'t accept animated WebP stickers</string>
+  <string name="pack_telegram_empty">Add a sticker first.</string>
+  <string name="pack_no_telegram">Telegram is not installed.</string>
+  <string name="data">Data</string>
+  <string name="backup">Back up packs</string>
+  <string name="backup_desc">Saves every pack in a .zip file</string>
+  <string name="restore">Restore backup</string>
+  <string name="restore_desc">Adds the packs from a Slap .zip file</string>
+  <string name="backup_note">Restoring never overwrites: packs you already have are skipped.</string>
+  <string name="backup_failed">Backup failed: %1$s</string>
+  <string name="restore_failed">Restore failed: %1$s</string>
+  <plurals name="backup_done">
+    <item quantity="one">%d pack saved.</item>
+    <item quantity="other">%d packs saved.</item>
+  </plurals>
+  <plurals name="restore_done">
+    <item quantity="one">%d pack restored.</item>
+    <item quantity="other">%d packs restored.</item>
+  </plurals>
+  <plurals name="restore_skipped">
+    <item quantity="one">%d already existed.</item>
+    <item quantity="other">%d already existed.</item>
+  </plurals>
+  <string name="text_add">Add text</string>
+  <string name="text_hint_empty">Opens a full-screen editor with fonts, colors and backgrounds. Add as many texts as you want.</string>
+  <string name="text_hint">Tap one on the image to edit it. Drag to move, pinch to resize and rotate, drop it on the bin to delete.</string>
+  <plurals name="text_count">
+    <item quantity="one">%d text</item>
+    <item quantity="other">%d texts</item>
+  </plurals>
+  <string name="text_done">Done</string>
+  <string name="text_type_here">Type here</string>
+  <string name="text_align">Alignment</string>
+  <string name="text_style">Background</string>
+  <string name="text_delete">Delete text</string>
+  <string name="about_fonts">Fonts</string>
+  <string name="about_fonts_desc">%1$d open fonts · SIL OFL 1.1 and Apache 2.0</string>
+  <!-- 1.1.0: robustness -->
+  <string name="close">Close</string>
+  <string name="share_unreadable">Slap can\'t read this file: the app you shared it from didn\'t give access to it. Save the file to the phone and add it from a pack with Files instead.</string>
+  <string name="editor_no_permission">Slap has no permission to read this file anymore. Pick it again with Photos or Files.</string>
+  <string name="bg_nothing_removed">Nothing was removed: the color at the edges doesn\'t match the background. Raise the tolerance or try AI.</string>
+  <string name="bg_failed_title">Couldn\'t remove the background</string>
+  <string name="ai_whole_image">The AI took the whole image as the subject, so nothing was removed. For a plain background, use Flat color.</string></resources>

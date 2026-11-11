@@ -16,7 +16,12 @@ import androidx.compose.ui.unit.dp
 import dev.tvnclr.slap.R
 import dev.tvnclr.slap.engine.PackStore
 import dev.tvnclr.slap.engine.StickerMaker
+import dev.tvnclr.ui.TvButton
+import dev.tvnclr.ui.TvCallout
 import dev.tvnclr.ui.TvDivider
+import dev.tvnclr.ui.TvStatus
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.Modifier
 import dev.tvnclr.ui.TvPage
 import dev.tvnclr.ui.TvRow
 import dev.tvnclr.ui.TvSection
@@ -27,7 +32,17 @@ import kotlinx.coroutines.withContext
 @Composable
 fun ShareScreen(uri: Uri, onPick: (String) -> Unit, onClose: () -> Unit) {
   val context = LocalContext.current
-  val moving by produceState<Boolean?>(null, uri) { value = withContext(Dispatchers.IO) { StickerMaker.detectKind(context, uri) != StickerMaker.Kind.IMAGE } }
+  val check by produceState<ShareCheck?>(null, uri) {
+    value = withContext(Dispatchers.IO) { checkShared { StickerMaker.detectKind(context, uri) != StickerMaker.Kind.IMAGE } }
+  }
+  if (check == ShareCheck.UNREADABLE) {
+    TvPage(title = stringResource(R.string.share_title), onBack = onClose) {
+      TvCallout(stringResource(R.string.share_unreadable), TvStatus.ERROR)
+      TvButton(stringResource(R.string.close), onClick = onClose, modifier = Modifier.fillMaxWidth())
+    }
+    return
+  }
+  val moving: Boolean? = check?.let { it == ShareCheck.MOVING }
   val packs = rememberPacks()
   var creating by remember { mutableStateOf(false) }
   val canUse = { p: PackStore.Pack -> !p.animated || moving == true }

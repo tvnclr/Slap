@@ -52,6 +52,21 @@ public final class PackStore {
 
     private PackStore() {}
 
+    /** Folder holding one sub-folder per pack (used by backups). */
+    public static File rootDir(Context c) {
+        return root(c);
+    }
+
+    /** Copy of the original file a sticker was made from, kept so it can be edited later. */
+    public static File sourceFile(Pack p, String sticker) {
+        return new File(new File(p.dir, "src"), sticker + ".src");
+    }
+
+    /** Editor settings of a sticker (crop, background, text...), next to its source copy. */
+    public static File settingsFile(Pack p, String sticker) {
+        return new File(new File(p.dir, "src"), sticker + ".json");
+    }
+
     private static File root(Context c) {
         File r = new File(c.getFilesDir(), "packs");
         if (!r.exists()) r.mkdirs();
@@ -149,7 +164,8 @@ public final class PackStore {
         write(p);
     }
 
-    public static synchronized void addSticker(Pack p, byte[] webp, String emoji) throws IOException {
+    /** Adds a sticker at the end; returns its file name. */
+    public static synchronized String addSticker(Pack p, byte[] webp, String emoji) throws IOException {
         if (p.stickers.size() >= MAX_STICKERS) throw new IOException("the pack already has " + MAX_STICKERS + " stickers");
         String name = "s" + System.currentTimeMillis() + ".webp";
         try (FileOutputStream fo = new FileOutputStream(new File(p.dir, name))) {
@@ -162,6 +178,20 @@ public final class PackStore {
         p.version++;
         if (p.stickers.size() == 1 || !p.file(TRAY_FILE).isFile()) makeTray(p);
         write(p);
+        return name;
+    }
+
+    /** Replaces the image of an existing sticker in place (same position and file name). */
+    public static synchronized void replaceSticker(Pack p, String file, byte[] webp, String emoji) throws IOException {
+        Sticker s = p.find(file);
+        if (s == null) throw new IOException("sticker not found");
+        try (FileOutputStream fo = new FileOutputStream(new File(p.dir, file))) {
+            fo.write(webp);
+        }
+        s.emoji = emoji;
+        p.version++;
+        if (p.stickers.indexOf(s) == 0) makeTray(p);
+        write(p);
     }
 
     public static synchronized void removeSticker(Pack p, String file) throws IOException {
@@ -170,6 +200,8 @@ public final class PackStore {
         boolean wasFirst = p.stickers.indexOf(s) == 0;
         p.stickers.remove(s);
         new File(p.dir, file).delete();
+        sourceFile(p, file).delete();
+        settingsFile(p, file).delete();
         p.version++;
         if (wasFirst) {
             if (p.stickers.isEmpty()) p.file(TRAY_FILE).delete();
@@ -187,9 +219,13 @@ public final class PackStore {
     }
 
     public static synchronized void delete(Pack p) {
-        File[] fs = p.dir.listFiles();
-        if (fs != null) for (File f : fs) f.delete();
-        p.dir.delete();
+        deleteTree(p.dir);
+    }
+
+    static void deleteTree(File f) {
+        File[] fs = f.listFiles();
+        if (fs != null) for (File x : fs) deleteTree(x);
+        f.delete();
     }
 
     /** Icone da bandeja: primeiro frame da primeira figurinha, 96x96 PNG. */

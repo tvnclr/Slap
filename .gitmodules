@@ -1,0 +1,3 @@
+[submodule "tvnclr-ui"]
+	path = tvnclr-ui
+	url = https://github.com/tvnclr/tvnclr-ui.git

@@ -22,6 +22,7 @@ import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material.icons.rounded.TextFields
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -43,6 +44,7 @@ import dev.tvnclr.slap.R
 import dev.tvnclr.slap.engine.CropView
 import dev.tvnclr.slap.engine.PackStore
 import dev.tvnclr.slap.engine.StickerMaker
+import dev.tvnclr.slap.engine.TextLayersView
 import dev.tvnclr.ui.Tv
 import dev.tvnclr.ui.TvButton
 import dev.tvnclr.ui.TvButtonStyle
@@ -57,6 +59,8 @@ import dev.tvnclr.ui.TvShape
 import dev.tvnclr.ui.TvSpace
 import dev.tvnclr.ui.TvSwitchRow
 import dev.tvnclr.ui.TvTextField
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.ui.res.pluralStringResource
 import dev.tvnclr.ui.TvType
 import java.text.NumberFormat
 
@@ -65,7 +69,7 @@ private const val TOL_MIN = 5
 private const val TOL_MAX = 120
 
 @Composable
-fun EditorScreen(packId: String, uri: Uri, onDone: (saved: Boolean) -> Unit) {
+fun EditorScreen(packId: String, uri: Uri, editFile: String?, onDone: (saved: Boolean) -> Unit) {
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
   val pack = remember(packId) { PackStore.get(context, packId) }
@@ -73,7 +77,7 @@ fun EditorScreen(packId: String, uri: Uri, onDone: (saved: Boolean) -> Unit) {
     LaunchedEffect(Unit) { onDone(false) }
     return
   }
-  val ed = remember(packId, uri) { EditorController(context, scope, pack, uri) }
+  val ed = remember(packId, uri) { EditorController(context, scope, pack, uri, editFile) }
   LaunchedEffect(ed) { ed.load() }
   DisposableEffect(ed) { onDispose { ed.release() } }
   LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { ed.stopPreview() }
@@ -84,7 +88,7 @@ fun EditorScreen(packId: String, uri: Uri, onDone: (saved: Boolean) -> Unit) {
   val animated = ed.animatedOutput
 
   TvPage(
-      title = stringResource(R.string.editor_title),
+      title = stringResource(if (editFile != null) R.string.editor_title_edit else R.string.editor_title),
       subtitle = pack.name,
       onBack = { if (ed.busy) context.toast(context.getString(R.string.editor_wait)) else onDone(false) },
       bottomBar = {
@@ -116,7 +120,9 @@ fun EditorScreen(packId: String, uri: Uri, onDone: (saved: Boolean) -> Unit) {
           frame.addView(cropView, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT))
           val video = TextureView(ctx).apply { visibility = View.INVISIBLE }
           frame.addView(video, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
-          ed.attachViews(cropView, video)
+          val textView = TextLayersView(ctx)
+          frame.addView(textView, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+          ed.attachViews(cropView, video, textView)
           frame
         },
         update = { ed.crop?.setColors(c.cardBorder.toArgb(), c.elevated.toArgb(), c.card.toArgb(), c.textSecondary.toArgb(), loading) },
@@ -161,7 +167,8 @@ fun EditorScreen(packId: String, uri: Uri, onDone: (saved: Boolean) -> Unit) {
         )
       }
 
-      if (ed.kind != StickerMaker.Kind.VIDEO) {
+      // animated video stickers have no background removal yet; a still taken from a video does
+      if (!(ed.kind == StickerMaker.Kind.VIDEO && animated)) {
         TvSection(stringResource(R.string.editor_background), Icons.Rounded.AutoFixHigh) {
           Column(Modifier.padding(TvSpace.l), verticalArrangement = Arrangement.spacedBy(TvSpace.m)) {
             val modes = if (ed.aiAllowed) EditorController.Bg.entries else listOf(EditorController.Bg.KEEP, EditorController.Bg.SOLID)
@@ -245,6 +252,24 @@ fun EditorScreen(packId: String, uri: Uri, onDone: (saved: Boolean) -> Unit) {
         }
       }
 
+      TvSection(stringResource(R.string.editor_text), Icons.Rounded.TextFields) {
+        Column(Modifier.padding(TvSpace.l), verticalArrangement = Arrangement.spacedBy(TvSpace.m)) {
+          TvButton(
+              stringResource(R.string.text_add),
+              onClick = ed::addText,
+              icon = Icons.Rounded.Add,
+              style = TvButtonStyle.TONAL,
+              enabled = !ed.busy,
+              modifier = Modifier.fillMaxWidth(),
+          )
+          Text(
+              if (ed.textCount == 0) stringResource(R.string.text_hint_empty)
+              else pluralStringResource(R.plurals.text_count, ed.textCount, ed.textCount) + " · " + stringResource(R.string.text_hint),
+              style = TvType.caption,
+              color = c.textSecondary,
+          )
+        }
+      }
       TvSection(stringResource(R.string.editor_emoji), Icons.Rounded.EmojiEmotions) {
         Column(Modifier.padding(TvSpace.l), verticalArrangement = Arrangement.spacedBy(TvSpace.s)) {
           TvTextField(ed.emoji, { ed.emoji = it }, placeholder = "😀")
@@ -254,9 +279,11 @@ fun EditorScreen(packId: String, uri: Uri, onDone: (saved: Boolean) -> Unit) {
     }
   }
 
+  ed.textDraft?.let { draft -> TextEditorOverlay(initial = draft, existing = ed.draftIsExisting, onDone = ed::commitText) }
+
   ed.fatal?.let { msg ->
     TvConfirmDialog(
-        title = stringResource(R.string.editor_title),
+        title = stringResource(if (editFile != null) R.string.editor_title_edit else R.string.editor_title),
         text = msg,
         confirmText = stringResource(R.string.ok),
         dismissText = null,

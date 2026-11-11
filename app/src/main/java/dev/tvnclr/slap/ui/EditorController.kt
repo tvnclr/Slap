@@ -9,6 +9,8 @@ import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
+import android.util.Log
 import android.view.Surface
 import android.view.TextureView
 import android.view.View
@@ -21,9 +23,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import dev.tvnclr.slap.R
 import dev.tvnclr.slap.engine.CropView
+import dev.tvnclr.slap.engine.GifAi
 import dev.tvnclr.slap.engine.PackStore
 import dev.tvnclr.slap.engine.StickerMaker
+import dev.tvnclr.slap.engine.TextLayer
+import dev.tvnclr.slap.engine.TextLayersView
+import org.json.JSONArray
+import org.json.JSONObject
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.math.roundToInt
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -34,7 +45,17 @@ import kotlinx.coroutines.withContext
  * (GIF frames or MediaPlayer on a TextureView that follows the crop) and the final render.
  * The crop and video views are classic Views hosted by the Compose screen.
  */
-class EditorController(private val context: Context, private val scope: CoroutineScope, val pack: PackStore.Pack, private val uri: Uri) {
+/**
+ * [editFile] is set when re-editing a saved sticker: [uri] then points at its source copy and the
+ * saved settings (framing, background, clip, text) are restored.
+ */
+class EditorController(
+    private val context: Context,
+    private val scope: CoroutineScope,
+    val pack: PackStore.Pack,
+    private val uri: Uri,
+    val editFile: String? = null,
+) {
 
   enum class Bg { KEEP, SOLID, AI }
 
@@ -58,14 +79,59 @@ class EditorController(private val context: Context, private val scope: Coroutin
   var startMs by mutableLongStateOf(0L)
   var lenMs by mutableLongStateOf(3000L)
   var speed by mutableFloatStateOf(1f)
+
+  // ── text boxes (shared with the overlay view, which edits them in place) ──
+  private val texts = ArrayList<TextLayer>()
+  var textCount by mutableIntStateOf(0)
+    private set
+  /** The box open in the full-screen text editor, or null. */
+  var textDraft by mutableStateOf<TextLayer?>(null)
+    private set
+  /** Index of the box being edited, -1 for a new one. */
+  private var draftIndex = -1
+  val draftIsExisting: Boolean
+    get() = draftIndex >= 0
+
+  fun addText() {
+    draftIndex = -1
+    textDraft = TextLayer().also { it.y = if (texts.isEmpty()) 0.5f else (0.5f + 0.12f * (texts.size % 3)).coerceAtMost(0.85f) }
+  }
+
+  fun editText(index: Int) {
+    if (index !in texts.indices) return
+    draftIndex = index
+    textDraft = texts[index].copy()
+    overlay?.setHidden(index)
+  }
+
+  /** Closes the full-screen editor; blank text removes the box. */
+  fun commitText(layer: TextLayer?) {
+    val i = draftIndex
+    if (layer == null || layer.isEmpty) {
+      if (i in texts.indices) texts.removeAt(i)
+    } else if (i in texts.indices) {
+      texts[i] = layer
+    } else {
+      texts.add(layer)
+    }
+    textDraft = null
+    draftIndex = -1
+    overlay?.setHidden(-1)
+    textsChanged()
+  }
+
+  private fun textsChanged() {
+    textCount = texts.size
+    overlay?.invalidate()
+  }
   var emoji by mutableStateOf("😀")
 
   val animatedOutput: Boolean
     get() = pack.animated && kind != null && kind != StickerMaker.Kind.IMAGE
 
-  /** The AI cutout is for single-frame stickers only (per frame it would be far too slow). */
+  /** AI cutout: single-frame stickers and GIFs (cut frame by frame); not videos. */
   val aiAllowed: Boolean
-    get() = !animatedOutput
+    get() = !animatedOutput || kind == StickerMaker.Kind.GIF
 
   val effectiveLen: Long
     get() = maxOf(100L, minOf(lenMs, videoMs - startMs))
@@ -78,6 +144,8 @@ class EditorController(private val context: Context, private val scope: Coroutin
   private var source: StickerMaker.Source? = null
   private var raw: Bitmap? = null
   private var aiCut: Bitmap? = null
+  /** AI masks of every GIF frame, computed once per file. */
+  private var gifMasks: GifAi.Masks? = null
   private var preview: Bitmap? = null
   private var prevW = 0
   private var prevH = 0
@@ -94,12 +162,24 @@ class EditorController(private val context: Context, private val scope: Coroutin
     private set
 
   private var video: TextureView? = null
+  private var overlay: TextLayersView? = null
+  /** Saved framing waiting for the first frame (re-edit). */
+  private var pendingMatrix: Matrix? = null
 
-  fun attachViews(cropView: CropView, videoView: TextureView) {
+  fun attachViews(cropView: CropView, videoView: TextureView, textView: TextLayersView) {
     crop = cropView
     video = videoView
+    overlay = textView
     cropView.setOnChange { applyVideoTransform() }
-    preview?.let { cropView.setSource(it, false) }
+    textView.setLayers(texts)
+    textView.setListener(
+        object : TextLayersView.Listener {
+          override fun onTap(index: Int) = editText(index)
+
+          override fun onChanged() = textsChanged()
+        }
+    )
+    preview?.let { show(it, false) }
   }
 
   // ── loading ──
@@ -107,7 +187,10 @@ class EditorController(private val context: Context, private val scope: Coroutin
   fun load() {
     scope.launch {
       try {
-        val s = withContext(Dispatchers.IO) { StickerMaker.open(context, uri) }
+        val saved =
+            editFile?.let { f -> withContext(Dispatchers.IO) { runCatching { JSONObject(PackStore.settingsFile(pack, f).readText()) }.getOrNull() } }
+        val known = saved?.optString("kind")?.let { k -> runCatching { StickerMaker.Kind.valueOf(k) }.getOrNull() }
+        val s = withContext(Dispatchers.IO) { StickerMaker.open(context, uri, known) }
         source = s
         kind = s.kind
         if (pack.animated && s.kind == StickerMaker.Kind.IMAGE) {
@@ -137,7 +220,9 @@ class EditorController(private val context: Context, private val scope: Coroutin
         }
         // removing the background of a video does not work well: photo and GIF only
         if (s.kind == StickerMaker.Kind.VIDEO) bg = Bg.KEEP
+        if (saved != null) restore(saved)
         setStill(f, keep = false)
+        if (saved != null && s.kind == StickerMaker.Kind.VIDEO && startMs > 0) refreshVideoStill()
         status = context.getString(if (animatedOutput) R.string.editor_ready_animated else R.string.editor_ready_static)
         loaded = true
       } catch (p: StickerMaker.Problem) {
@@ -147,6 +232,9 @@ class EditorController(private val context: Context, private val scope: Coroutin
               StickerMaker.Problem.Code.VIDEO_DURATION, StickerMaker.Problem.Code.VIDEO_FRAMES -> context.getString(R.string.editor_video_unreadable)
               else -> context.getString(R.string.editor_open_failed, p.message)
             }
+      } catch (e: SecurityException) {
+        Log.w(TAG, "no read access to $uri", e)
+        fatal = context.getString(R.string.editor_no_permission)
       } catch (t: Throwable) {
         fatal = context.getString(R.string.editor_open_failed, t.message)
       }
@@ -163,8 +251,78 @@ class EditorController(private val context: Context, private val scope: Coroutin
   }
 
   private fun show(b: Bitmap, keep: Boolean) {
+    Log.d(TAG, "show ${b.width}x${b.height} keep=$keep view=${crop != null}")
     preview = b
-    crop?.setSource(b, keep)
+    val c = crop ?: return
+    c.setSource(b, keep)
+    if (!keep) {
+      pendingMatrix?.let {
+        c.restoreOutputMatrix(it, StickerMaker.SIZE)
+        fillMode = c.isFillMode
+        pendingMatrix = null
+      }
+    }
+  }
+
+  // ── saved settings (re-edit) ──
+
+  private fun restore(o: JSONObject) {
+    bg = runCatching { Bg.valueOf(o.optString("bg", "KEEP")) }.getOrDefault(Bg.KEEP)
+    if (bg == Bg.AI && !aiAllowed) bg = Bg.KEEP
+    tolerance = o.optInt("tolerance", tolerance)
+    everywhere = o.optBoolean("everywhere", false)
+    speed = o.optDouble("speed", 1.0).toFloat()
+    startMs = o.optLong("startMs", 0L)
+    lenMs = o.optLong("lengthMs", lenMs)
+    emoji = o.optString("emoji", emoji).replace(",", " ")
+    texts.clear()
+    texts.addAll(TextLayer.listFrom(o))
+    textsChanged()
+    o.optJSONArray("matrix")?.let { a ->
+      if (a.length() == 9) pendingMatrix = Matrix().apply { setValues(FloatArray(9) { a.optDouble(it).toFloat() }) }
+    }
+  }
+
+  private fun settingsJson(base: Matrix, em: String): JSONObject {
+    val v = FloatArray(9).also { base.getValues(it) }
+    return JSONObject().apply {
+      put("kind", kind?.name)
+      put("bg", bg.name)
+      put("tolerance", tolerance)
+      put("everywhere", everywhere)
+      put("speed", speed.toDouble())
+      put("startMs", startMs)
+      put("lengthMs", lenMs)
+      put("emoji", em)
+      put("texts", TextLayer.toJson(texts))
+      put("matrix", JSONArray().apply { v.forEach { put(it.toDouble()) } })
+    }
+  }
+
+  /** Copies the original file next to the sticker so it can be edited later (skipped above the size cap). */
+  private fun saveSource(sticker: String): Boolean {
+    val dst = PackStore.sourceFile(pack, sticker)
+    dst.parentFile?.mkdirs()
+    return try {
+      var total = 0L
+      context.contentResolver.openInputStream(uri).use { input ->
+        requireNotNull(input)
+        dst.outputStream().use { out ->
+          val buf = ByteArray(64 * 1024)
+          while (true) {
+            val n = input.read(buf)
+            if (n <= 0) break
+            total += n
+            if (total > MAX_SOURCE_BYTES) throw java.io.IOException("source too large")
+            out.write(buf, 0, n)
+          }
+        }
+      }
+      true
+    } catch (e: Exception) {
+      dst.delete()
+      false
+    }
   }
 
   // ── background ──
@@ -201,14 +359,44 @@ class EditorController(private val context: Context, private val scope: Coroutin
         bgBusy = true
         val tol = tolerance
         val all = everywhere
+        Log.d(TAG, "solid start token=$token ${src.width}x${src.height} tol=$tol everywhere=$all")
         scope.launch {
-          val out = withContext(Dispatchers.Default) { StickerMaker.removeSolid(src, tol, all) }
-          if (token != bgToken.get()) return@launch
-          show(out, keep)
+          val t0 = SystemClock.elapsedRealtime()
+          val r =
+              try {
+                Result.success(withContext(BG) { StickerMaker.removeSolid(src, tol, all).let { it to StickerMaker.transparentFraction(it) } })
+              } catch (e: CancellationException) {
+                throw e
+              } catch (e: Throwable) {
+                Result.failure(e)
+              }
+          if (token != bgToken.get()) {
+            Log.d(TAG, "solid discarded token=$token current=${bgToken.get()}")
+            return@launch
+          }
           bgBusy = false
+          r.onSuccess { (out, clear) ->
+                Log.d(TAG, "solid done token=$token clear=${(clear * 100).roundToInt()}% in ${SystemClock.elapsedRealtime() - t0} ms")
+                show(out, keep)
+                if (clear < NOTHING_REMOVED) {
+                  status = context.getString(R.string.bg_nothing_removed)
+                  context.toast(status)
+                }
+              }
+              .onFailure { e ->
+                Log.w(TAG, "solid failed token=$token", e)
+                status = context.getString(R.string.bg_failed_title)
+                errorDialog = context.getString(R.string.bg_failed_title) to (e.message ?: e.javaClass.simpleName)
+                bg = Bg.KEEP
+                show(src, keep)
+              }
         }
       }
       Bg.AI -> {
+        if (animatedOutput && kind == StickerMaker.Kind.GIF) {
+          aiGif(src, token, keep)
+          return
+        }
         aiCut?.let {
           show(it, keep)
           bgBusy = false
@@ -216,9 +404,14 @@ class EditorController(private val context: Context, private val scope: Coroutin
         }
         bgBusy = true
         status = context.getString(R.string.bg_ai_cutting)
+        Log.d(TAG, "ai start token=$token ${src.width}x${src.height}")
         StickerMaker.cutWithAi(context, src, { msg -> ui.post { status = msg } }) { fg, err ->
-          if (token != bgToken.get()) return@cutWithAi
+          if (token != bgToken.get()) {
+            Log.d(TAG, "ai discarded token=$token current=${bgToken.get()}")
+            return@cutWithAi
+          }
           bgBusy = false
+          Log.d(TAG, "ai done token=$token ok=${fg != null} err=$err")
           if (fg == null) {
             status = context.getString(R.string.bg_ai_unavailable)
             errorDialog = context.getString(R.string.bg_ai_error_title) to (err ?: "")
@@ -230,6 +423,52 @@ class EditorController(private val context: Context, private val scope: Coroutin
             status = context.getString(R.string.bg_ai_done)
           }
         }
+      }
+    }
+  }
+
+  /** GIF with AI: one cutout of the first frame (installs the model, reports errors), then every frame. */
+  private fun aiGif(src: Bitmap, token: Int, keep: Boolean) {
+    gifMasks?.let { m ->
+      show(StickerMaker.applyAiMask(src, m), keep)
+      bgBusy = false
+      return
+    }
+    val s = source ?: return
+    bgBusy = true
+    status = context.getString(R.string.bg_ai_cutting)
+    StickerMaker.cutWithAi(context, src, { msg -> ui.post { status = msg } }) { fg, err ->
+      if (token != bgToken.get()) return@cutWithAi
+      if (fg == null) {
+        bgBusy = false
+        status = context.getString(R.string.bg_ai_unavailable)
+        errorDialog = context.getString(R.string.bg_ai_error_title) to (err ?: "")
+        bg = Bg.KEEP
+        show(src, keep)
+        return@cutWithAi
+      }
+      show(fg, keep)
+      scope.launch {
+        val r =
+            withContext(BG) {
+              runCatching {
+                Log.d(TAG, "gif ai start token=$token frames=${s.gifFrames}")
+                StickerMaker.gifAiMasks(s) { cur, total -> ui.post { if (token == bgToken.get()) status = context.getString(R.string.bg_ai_frames, cur, total) } }
+              }
+            }
+        r.onSuccess { gifMasks = it }.onFailure { Log.w(TAG, "gif ai failed token=$token", it) }
+        if (token != bgToken.get()) return@launch
+        bgBusy = false
+        r.onSuccess { m ->
+              show(StickerMaker.applyAiMask(src, m), true)
+              status = context.getString(R.string.bg_ai_frames_done)
+            }
+            .onFailure { e ->
+              status = context.getString(R.string.bg_ai_unavailable)
+              errorDialog = context.getString(R.string.bg_ai_error_title) to (e.message ?: "")
+              bg = Bg.KEEP
+              show(src, true)
+            }
       }
     }
   }
@@ -311,7 +550,7 @@ class EditorController(private val context: Context, private val scope: Coroutin
         val all = everywhere
         val data = s.gifData
         scope.launch {
-          val fr = withContext(Dispatchers.Default) { StickerMaker.gifPreview(data, solid, tol, all) }
+          val fr = withContext(Dispatchers.Default) { StickerMaker.gifPreview(data, solid, tol, all, if (bg == Bg.AI) gifMasks else null) }
           gifFrames = fr.frames
           gifDelays = fr.delays
           status = context.getString(R.string.editor_preview_loop)
@@ -434,11 +673,13 @@ class EditorController(private val context: Context, private val scope: Coroutin
         StickerMaker.Options().apply {
           animated = animatedOutput
           solidBackground = bg == Bg.SOLID
+          aiMasks = if (bg == Bg.AI && animatedOutput) gifMasks else null
           everywhere = this@EditorController.everywhere
           tolerance = this@EditorController.tolerance
           speed = this@EditorController.speed
           startMs = this@EditorController.startMs
           lengthMs = effectiveLen
+          texts = this@EditorController.texts.filter { !it.isEmpty }.map { it.copy() }
         }
     val base = c.outputMatrix(StickerMaker.SIZE)
     val em = StickerMaker.parseEmoji(emoji)
@@ -464,7 +705,17 @@ class EditorController(private val context: Context, private val scope: Coroutin
                 }
               }
             }
-        withContext(Dispatchers.IO) { PackStore.addSticker(pack, webp, em) }
+        val settings = settingsJson(base, em)
+        withContext(Dispatchers.IO) {
+          val edit = editFile
+          if (edit != null) {
+            PackStore.replaceSticker(pack, edit, webp, em)
+            PackStore.settingsFile(pack, edit).writeText(settings.toString())
+          } else {
+            val name = PackStore.addSticker(pack, webp, em)
+            if (saveSource(name)) PackStore.settingsFile(pack, name).writeText(settings.toString())
+          }
+        }
         markBusy(false)
         context.toast(context.getString(R.string.editor_saved, (webp.size + 1023) / 1024))
         onSaved()
@@ -484,6 +735,7 @@ class EditorController(private val context: Context, private val scope: Coroutin
     busy = b
     progress = -1f
     crop?.isEnabled = !b
+    overlay?.isEnabled = !b
     (context as? Activity)?.window?.let { if (b) it.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) else it.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
   }
 
@@ -493,3 +745,17 @@ class EditorController(private val context: Context, private val scope: Coroutin
     source?.release()
   }
 }
+
+/** Above this, the original is not kept and the sticker cannot be re-edited. */
+private const val MAX_SOURCE_BYTES = 100L * 1024 * 1024
+
+private const val TAG = "Slap/bg"
+
+/**
+ * Background removal runs on its own pool instead of Dispatchers.Default: a stuck job (the GIF AI
+ * waits on ML Kit) can then never starve the flat-color removal or anything else.
+ */
+private val BG = Executors.newCachedThreadPool { r -> Thread(r, "slap-bg").apply { isDaemon = true } }.asCoroutineDispatcher()
+
+/** Below this share of transparent pixels the removal is treated as having removed nothing. */
+private const val NOTHING_REMOVED = 0.01f
