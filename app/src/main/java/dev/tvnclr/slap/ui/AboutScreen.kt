@@ -71,10 +71,10 @@ fun AboutScreen(onBack: () -> Unit) {
           onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(SOURCE_URL))) },
       )
       TvDivider()
-      val bundled = remember { Fonts.ALL.filter { it.license != null } }
+      val bundled = remember { Fonts.ALL.count { it.license != null } }
       TvRow(
           title = stringResource(R.string.about_fonts),
-          subtitle = stringResource(R.string.about_fonts_desc, bundled.size),
+          subtitle = stringResource(R.string.about_fonts_desc, bundled),
           icon = Icons.Rounded.TextFields,
           onClick = { showFonts = true },
       )
@@ -84,21 +84,30 @@ fun AboutScreen(onBack: () -> Unit) {
   if (showFonts) FontLicensesDialog { showFonts = false }
 }
 
-/** Font list; tapping one shows its license text, which the SIL OFL asks to ship with the fonts. */
+/** One bundled third-party work and its license text in assets. */
+private data class Notice(val name: String, val license: String, val asset: String)
+
+private val NOTICES: List<Notice> by lazy {
+  Fonts.ALL.filter { it.license != null }.map { Notice(it.name, it.license, "licenses/fonts/${it.id}.txt") } +
+      listOf(
+          Notice("U²-Net (u2netp model)", "Apache License 2.0", "licenses/apache-2.0.txt"),
+          Notice("LiteRT", "Apache License 2.0", "licenses/apache-2.0.txt"),
+      )
+}
+
+/** Bundled fonts and AI parts; tapping one shows its license text, which their licenses ask to ship with them. */
 @Composable
 private fun FontLicensesDialog(onDismiss: () -> Unit) {
   val context = LocalContext.current
-  var open by remember { mutableStateOf<Fonts.Def?>(null) }
+  var open by remember { mutableStateOf<Notice?>(null) }
   Dialog(onDismissRequest = { if (open != null) open = null else onDismiss() }) {
     Surface(shape = TvShape.card, color = Tv.colors.card, modifier = Modifier.fillMaxWidth().heightIn(max = 560.dp)) {
       Column(Modifier.verticalScroll(rememberScrollState()).padding(vertical = TvSpace.s)) {
         val d = open
         if (d == null) {
-          Fonts.ALL.filter { it.license != null }.forEach { f ->
-            TvRow(title = f.name, subtitle = f.license, onClick = { open = f })
-          }
+          NOTICES.forEach { f -> TvRow(title = f.name, subtitle = f.license, onClick = { open = f }) }
         } else {
-          val text = remember(d.id) { runCatching { context.assets.open("licenses/fonts/${d.id}.txt").bufferedReader().use { it.readText() } }.getOrDefault("") }
+          val text = remember(d.asset) { runCatching { context.assets.open(d.asset).bufferedReader().use { it.readText() } }.getOrDefault("") }
           TvRow(title = d.name, subtitle = d.license)
           Text(text, style = TvType.mono, color = Tv.colors.textSecondary, modifier = Modifier.padding(horizontal = TvSpace.l, vertical = TvSpace.s))
         }

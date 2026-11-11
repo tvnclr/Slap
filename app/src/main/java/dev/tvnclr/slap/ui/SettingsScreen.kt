@@ -1,6 +1,12 @@
 package dev.tvnclr.slap.ui
 
 import android.animation.ValueAnimator
+import androidx.compose.material.icons.rounded.AutoFixHigh
+import androidx.compose.material3.Text
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import dev.tvnclr.slap.engine.Segmenters
+import dev.tvnclr.ui.TvType
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.rounded.Backup
@@ -134,6 +140,28 @@ fun SettingsScreen(onBack: () -> Unit) {
             { i -> scope.launch { TvThemePrefs.setBackground(context, backgrounds[i].first) } },
         )
         if (!animationsOn) TvCallout(stringResource(R.string.background_anim_off), TvStatus.NEUTRAL)
+      }
+    }
+
+    val engines = remember { Segmenters.available() }
+    if (engines.size > 1) {
+      var engine by remember { mutableStateOf(Segmenters.selected(context)) }
+      TvSection(stringResource(R.string.ai_engine), Icons.Rounded.AutoFixHigh) {
+        Column(Modifier.padding(TvSpace.l), verticalArrangement = Arrangement.spacedBy(TvSpace.m)) {
+          TvSegmented(
+              engines.map { stringResource(if (it == "mlkit") R.string.ai_engine_mlkit else R.string.ai_engine_u2net) },
+              engines.indexOf(engine),
+              { i ->
+                engine = engines[i]
+                Segmenters.select(context, engines[i])
+              },
+          )
+          Text(
+              stringResource(if (engine == "mlkit") R.string.ai_engine_mlkit_desc else R.string.ai_engine_u2net_desc),
+              style = TvType.caption,
+              color = Tv.colors.textSecondary,
+          )
+        }
       }
     }
 

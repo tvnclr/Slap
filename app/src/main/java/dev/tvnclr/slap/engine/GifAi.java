@@ -1,5 +1,6 @@
 package dev.tvnclr.slap.engine;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -7,17 +8,12 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 
-import com.google.android.gms.tasks.Tasks;
-import com.google.mlkit.vision.common.InputImage;
-import com.google.mlkit.vision.segmentation.subject.SubjectSegmentation;
-import com.google.mlkit.vision.segmentation.subject.SubjectSegmentationResult;
-import com.google.mlkit.vision.segmentation.subject.SubjectSegmenter;
-import com.google.mlkit.vision.segmentation.subject.SubjectSegmenterOptions;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -51,48 +47,52 @@ public final class GifAi {
     /** Frames are scaled down to this side for the model; the mask is scaled back up. */
     private static final int MODEL_SIDE = 384;
     private static final int MAX_FRAMES = 300;
-    /** A frame the model has not answered in this long fails the whole run instead of hanging it. */
-    private static final long FRAME_TIMEOUT_S = 15;
 
     private GifAi() {}
 
     /**
-     * Blocking: runs the model on every frame. Call off the main thread, after a single-image
-     * cutout made sure the model is installed.
+     * Blocking: runs the engine picked in the settings on every frame. Call off the main thread,
+     * after a single-image cutout got the engine ready (model download, errors).
      */
-    public static Masks compute(byte[] gif, int frames, Progress pr) throws Exception {
-        SubjectSegmenter seg = SubjectSegmentation.getClient(
-                new SubjectSegmenterOptions.Builder().enableForegroundConfidenceMask().build());
+    public static Masks compute(Context c, byte[] gif, int frames, Progress pr) throws Exception {
+        Segmenter seg = Segmenters.create(c);
+        CountDownLatch ready = new CountDownLatch(1);
+        String[] prepError = new String[1];
+        seg.prepare(c, msg -> {}, e -> {
+            prepError[0] = e;
+            ready.countDown();
+        });
+        if (!ready.await(60, TimeUnit.SECONDS)) {
+            seg.close();
+            throw new IllegalStateException("AI engine not ready");
+        }
+        if (prepError[0] != null) {
+            seg.close();
+            throw new IllegalStateException(prepError[0]);
+        }
         List<byte[]> conf = new ArrayList<>();
         int[] dims = new int[2];
         Exception[] err = new Exception[1];
         try {
             GifDecoder.decode(gif, (argb, w, h, delay, idx) -> {
                 if (pr != null) pr.on(idx + 1, Math.min(frames, MAX_FRAMES));
-                float k = Math.min(1f, MODEL_SIDE / (float) Math.max(w, h));
-                int mw = Math.max(1, Math.round(w * k)), mh = Math.max(1, Math.round(h * k));
-                if (!conf.isEmpty() && (mw != dims[0] || mh != dims[1])) return false;
                 Bitmap full = Bitmap.createBitmap(argb, w, h, Bitmap.Config.ARGB_8888);
-                Bitmap small = k < 1f ? Bitmap.createScaledBitmap(full, mw, mh, true) : full;
                 try {
-                    SubjectSegmentationResult r = Tasks.await(seg.process(InputImage.fromBitmap(small, 0)), FRAME_TIMEOUT_S, TimeUnit.SECONDS);
-                    conf.add(toBytes(r.getForegroundConfidenceMask(), mw * mh));
-                    dims[0] = mw;
-                    dims[1] = mh;
+                    Segmenter.Mask m = seg.segment(full, MODEL_SIDE);
+                    if (!conf.isEmpty() && (m.w != dims[0] || m.h != dims[1])) return false;
+                    conf.add(m.conf);
+                    dims[0] = m.w;
+                    dims[1] = m.h;
                 } catch (Exception e) {
                     err[0] = e;
                     return false;
                 } finally {
-                    if (small != full) small.recycle();
                     full.recycle();
                 }
                 return conf.size() < MAX_FRAMES;
             });
         } finally {
-            try {
-                seg.close();
-            } catch (Exception ignored) {
-            }
+            seg.close();
         }
         if (err[0] != null) throw err[0];
         if (conf.isEmpty()) throw new IllegalStateException("no frames");

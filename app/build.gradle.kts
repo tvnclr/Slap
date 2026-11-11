@@ -30,6 +30,8 @@ android {
     targetSdk = 36
     versionCode = 2
     versionName = appVersion
+    // phones (64 and 32 bit ARM) and x86_64 emulators / Chromebooks; 32-bit x86 is not worth its 2.4 MB
+    ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64") }
   }
 
   signingConfigs {
@@ -58,8 +60,16 @@ android {
   }
   kotlinOptions { jvmTarget = "17" }
   buildFeatures { compose = true }
-  androidResources { generateLocaleConfig = true }
-  packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
+  packaging {
+    resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" }
+    // LiteRT's native library is stored compressed: a smaller APK for one extraction at install
+    jniLibs { useLegacyPackaging = true }
+  }
+  androidResources {
+    generateLocaleConfig = true
+    // the AI model is memory-mapped straight from the APK
+    noCompress += "tflite"
+  }
 }
 
 base { archivesName.set("slap-${android.defaultConfig.versionName}") }
@@ -71,7 +81,9 @@ dependencies {
   implementation("androidx.activity:activity-compose:1.11.0")
   implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
   implementation("androidx.navigation:navigation-compose:2.9.5")
-  // the only feature library: on-device AI cutout (model comes from Google Play on first use)
+  // AI cutout: U^2-Net on LiteRT (free, bundled) in every build
+  implementation("com.google.ai.edge.litert:litert:1.4.2") // classic Interpreter API, Java only (2.x needs Kotlin 2.4)
+  // AI cutout: Google ML Kit (model from Google Play). Not in the fdroid branch, with MlKitSegmenter.java
   implementation("com.google.android.gms:play-services-mlkit-subject-segmentation:16.0.0-beta1")
   testImplementation("junit:junit:4.13.2")
 }

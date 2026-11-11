@@ -219,8 +219,8 @@ public final class StickerMaker {
     }
 
     /** AI cutout of every GIF frame; blocking, call off the main thread after {@link #cutWithAi} worked once. */
-    public static GifAi.Masks gifAiMasks(Source s, GifAi.Progress pr) throws Exception {
-        return GifAi.compute(s.gifData, s.gifFrames, pr);
+    public static GifAi.Masks gifAiMasks(Context c, Source s, GifAi.Progress pr) throws Exception {
+        return GifAi.compute(c, s.gifData, s.gifFrames, pr);
     }
 
     /** First frame of a GIF with its AI mask, for the still preview. */

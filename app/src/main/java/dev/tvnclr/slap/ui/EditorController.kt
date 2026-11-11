@@ -453,7 +453,7 @@ class EditorController(
             withContext(BG) {
               runCatching {
                 Log.d(TAG, "gif ai start token=$token frames=${s.gifFrames}")
-                StickerMaker.gifAiMasks(s) { cur, total -> ui.post { if (token == bgToken.get()) status = context.getString(R.string.bg_ai_frames, cur, total) } }
+                StickerMaker.gifAiMasks(context, s) { cur, total -> ui.post { if (token == bgToken.get()) status = context.getString(R.string.bg_ai_frames, cur, total) } }
               }
             }
         r.onSuccess { gifMasks = it }.onFailure { Log.w(TAG, "gif ai failed token=$token", it) }

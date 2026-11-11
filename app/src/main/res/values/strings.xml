@@ -250,12 +250,19 @@
   <string name="text_align">Alignment</string>
   <string name="text_style">Background</string>
   <string name="text_delete">Delete text</string>
-  <string name="about_fonts">Fonts</string>
-  <string name="about_fonts_desc">%1$d open fonts · SIL OFL 1.1 and Apache 2.0</string>
+  <string name="about_fonts">Licenses</string>
+  <string name="about_fonts_desc">%1$d open fonts, the U²-Net model and LiteRT</string>
   <!-- 1.1.0: robustness -->
   <string name="close">Close</string>
   <string name="share_unreadable">Slap can\'t read this file: the app you shared it from didn\'t give access to it. Save the file to the phone and add it from a pack with Files instead.</string>
   <string name="editor_no_permission">Slap has no permission to read this file anymore. Pick it again with Photos or Files.</string>
   <string name="bg_nothing_removed">Nothing was removed: the color at the edges doesn\'t match the background. Raise the tolerance or try AI.</string>
   <string name="bg_failed_title">Couldn\'t remove the background</string>
-  <string name="ai_whole_image">The AI took the whole image as the subject, so nothing was removed. For a plain background, use Flat color.</string></resources>
+  <string name="ai_whole_image">The AI took the whole image as the subject, so nothing was removed. For a plain background, use Flat color.</string>
+  <!-- AI engines -->
+  <string name="ai_engine">AI cutout</string>
+  <string name="ai_engine_mlkit">Google ML Kit</string>
+  <string name="ai_engine_u2net">U²-Net</string>
+  <string name="ai_engine_mlkit_desc">Downloads its model from Google Play on first use. Needs Google Play services.</string>
+  <string name="ai_engine_u2net_desc">Built into the app: works offline and without Google services, also on drawings.</string>
+</resources>
