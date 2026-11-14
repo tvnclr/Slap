@@ -4,6 +4,13 @@ Uma entrada por passo de trabalho, com data. Correções pequenas entram como su
 
 ## Não lançado
 
+### 2026-11-14 — Ícone monocromático próprio
+- **O que estava errado:** o ícone adaptativo usava o foreground também como camada `monochrome`, então o verso da aba (branco a 30%) aparecia no ícone temático do Android e nos icon packs como uma mancha lavada. Quebrava a regra 6 do ícone da família tvnclr.
+- **O que mudou:** `drawable/ic_launcher_monochrome.xml` novo, igual ao foreground sem o caminho a 30% (contorno, curva da aba e traços de impacto, todos sólidos). `ic_launcher.xml` e `ic_launcher_round.xml` apontam para ele.
+- **Arquivos:** `res/drawable/ic_launcher_monochrome.xml`, `res/mipmap-anydpi-v26/ic_launcher.xml`, `res/mipmap-anydpi-v26/ic_launcher_round.xml`, `CHANGELOG.md`.
+- **Conferido:** `assembleDebug` numa cópia temporária; no APK, `aapt2 dump` mostra a camada `monochrome` apontando para `ic_launcher_monochrome` e o drawable sem nenhum preenchimento a 30%. Não foi instalado em aparelho.
+- **Pendente:** o `tvnclr-ui` corrigido (texto legível sobre o destaque Violet/Red no escuro) ainda não está aqui: o submódulo segue em `v1.0.0` até sair a `v1.0.3`.
+
 ### 2026-11-14 — Remoção de fundo: causa achada e corrigida
 - **O que estava errado:**
   - **IA (ML Kit e U²-Net):** o recorte nunca chegava à imagem. O modelo acertava a máscara, mas `GifAi.apply` a aplicava desenhando um bitmap `ALPHA_8` com `DST_IN`, e isso deixava o quadro intacto. Afetava foto e GIF, em qualquer aparelho.
