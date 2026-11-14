@@ -13,4 +13,5 @@ build/
 keystore.properties
 build.cmd
 build.log
-CLAUDE.md
+AGENTS.local.md
+CLAUDE.local.md

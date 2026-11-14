@@ -168,4 +168,41 @@ final class MaskOps {
         int x = i % w, y = i / w;
         return (x > 0 && !on[i - 1]) || (x < w - 1 && !on[i + 1]) || (y > 0 && !on[i - w]) || (y < h - 1 && !on[i + w]);
     }
+
+    /** Makes the pixels outside the kept shape fully transparent. */
+    static void clearOutside(int[] argb, boolean[] keep) {
+        for (int i = 0; i < argb.length; i++) {
+            if (!keep[i]) argb[i] = 0;
+        }
+    }
+
+    /**
+     * Multiplies the alpha of [argb] ([w] x [h], not premultiplied) by [mask] ([mw] x [mh], 0..255),
+     * scaled to the image with bilinear filtering. Pixels that end up fully transparent become 0.
+     */
+    static void applyAlpha(int[] argb, int w, int h, byte[] mask, int mw, int mh) {
+        int[] x0 = new int[w], x1 = new int[w];
+        float[] fx = new float[w];
+        for (int x = 0; x < w; x++) {
+            float sx = Math.max(0f, Math.min(mw - 1f, (x + 0.5f) * mw / w - 0.5f));
+            x0[x] = (int) sx;
+            x1[x] = Math.min(x0[x] + 1, mw - 1);
+            fx[x] = sx - x0[x];
+        }
+        for (int y = 0; y < h; y++) {
+            float sy = Math.max(0f, Math.min(mh - 1f, (y + 0.5f) * mh / h - 0.5f));
+            int y0 = (int) sy;
+            int r0 = y0 * mw, r1 = Math.min(y0 + 1, mh - 1) * mw;
+            float fy = sy - y0;
+            for (int x = 0; x < w; x++) {
+                float top = (mask[r0 + x0[x]] & 0xFF) * (1f - fx[x]) + (mask[r0 + x1[x]] & 0xFF) * fx[x];
+                float bottom = (mask[r1 + x0[x]] & 0xFF) * (1f - fx[x]) + (mask[r1 + x1[x]] & 0xFF) * fx[x];
+                int m = Math.round(top * (1f - fy) + bottom * fy);
+                int i = y * w + x;
+                int c = argb[i];
+                int a = ((c >>> 24) * m + 127) / 255;
+                argb[i] = a == 0 ? 0 : (a << 24) | (c & 0xFFFFFF);
+            }
+        }
+    }
 }

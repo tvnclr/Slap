@@ -123,30 +123,21 @@ public final class GifAi {
         return m;
     }
 
-    /** Frame [idx] with its mask applied (a new bitmap; [frame] is recycled when a copy was needed). */
+    /**
+     * Frame [idx] with its mask applied (a new bitmap unless [frame] is mutable ARGB, which is
+     * reused; [frame] is recycled when a new one was made). Done on the pixels: drawing an ALPHA_8
+     * mask with DST_IN left the frames untouched on the devices tested.
+     */
     public static Bitmap apply(Bitmap frame, Masks m, int idx) {
         if (m == null || m.alpha.length == 0) return frame;
-        Bitmap mask = alphaBitmap(m.alpha[Math.min(idx, m.alpha.length - 1)], m.w, m.h);
-        Bitmap out = frame.isMutable() && frame.getConfig() == Bitmap.Config.ARGB_8888 ? frame : frame.copy(Bitmap.Config.ARGB_8888, true);
-        Canvas c = new Canvas(out);
-        Paint p = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
-        p.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
-        c.drawBitmap(mask, null, new Rect(0, 0, out.getWidth(), out.getHeight()), p);
-        mask.recycle();
+        int w = frame.getWidth(), h = frame.getHeight();
+        int[] px = new int[w * h];
+        frame.getPixels(px, 0, w, 0, 0, w, h);
+        MaskOps.applyAlpha(px, w, h, m.alpha[Math.min(idx, m.alpha.length - 1)], m.w, m.h);
+        Bitmap out = frame.isMutable() && frame.getConfig() == Bitmap.Config.ARGB_8888 ? frame : Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        out.setHasAlpha(true);
+        out.setPixels(px, 0, w, 0, 0, w, h);
         if (out != frame) frame.recycle();
         return out;
-    }
-
-    private static Bitmap alphaBitmap(byte[] a, int w, int h) {
-        Bitmap b = Bitmap.createBitmap(w, h, Bitmap.Config.ALPHA_8);
-        int stride = b.getRowBytes();
-        ByteBuffer buf = ByteBuffer.allocate(stride * h);
-        for (int y = 0; y < h; y++) {
-            buf.position(y * stride);
-            buf.put(a, y * w, w);
-        }
-        buf.rewind();
-        b.copyPixelsFromBuffer(buf);
-        return b;
     }
 }

@@ -251,7 +251,7 @@ class EditorController(
   }
 
   private fun show(b: Bitmap, keep: Boolean) {
-    Log.d(TAG, "show ${b.width}x${b.height} keep=$keep view=${crop != null}")
+    Log.i(TAG, "show ${b.width}x${b.height} keep=$keep view=${crop != null}")
     preview = b
     val c = crop ?: return
     c.setSource(b, keep)
@@ -359,7 +359,7 @@ class EditorController(
         bgBusy = true
         val tol = tolerance
         val all = everywhere
-        Log.d(TAG, "solid start token=$token ${src.width}x${src.height} tol=$tol everywhere=$all")
+        Log.i(TAG, "solid start token=$token ${src.width}x${src.height} tol=$tol everywhere=$all")
         scope.launch {
           val t0 = SystemClock.elapsedRealtime()
           val r =
@@ -371,12 +371,12 @@ class EditorController(
                 Result.failure(e)
               }
           if (token != bgToken.get()) {
-            Log.d(TAG, "solid discarded token=$token current=${bgToken.get()}")
+            Log.i(TAG, "solid discarded token=$token current=${bgToken.get()}")
             return@launch
           }
           bgBusy = false
           r.onSuccess { (out, clear) ->
-                Log.d(TAG, "solid done token=$token clear=${(clear * 100).roundToInt()}% in ${SystemClock.elapsedRealtime() - t0} ms")
+                Log.i(TAG, "solid done token=$token clear=${(clear * 100).roundToInt()}% in ${SystemClock.elapsedRealtime() - t0} ms")
                 show(out, keep)
                 if (clear < NOTHING_REMOVED) {
                   status = context.getString(R.string.bg_nothing_removed)
@@ -404,14 +404,14 @@ class EditorController(
         }
         bgBusy = true
         status = context.getString(R.string.bg_ai_cutting)
-        Log.d(TAG, "ai start token=$token ${src.width}x${src.height}")
+        Log.i(TAG, "ai start token=$token ${src.width}x${src.height}")
         StickerMaker.cutWithAi(context, src, { msg -> ui.post { status = msg } }) { fg, err ->
           if (token != bgToken.get()) {
-            Log.d(TAG, "ai discarded token=$token current=${bgToken.get()}")
+            Log.i(TAG, "ai discarded token=$token current=${bgToken.get()}")
             return@cutWithAi
           }
           bgBusy = false
-          Log.d(TAG, "ai done token=$token ok=${fg != null} err=$err")
+          Log.i(TAG, "ai done token=$token ok=${fg != null} err=$err")
           if (fg == null) {
             status = context.getString(R.string.bg_ai_unavailable)
             errorDialog = context.getString(R.string.bg_ai_error_title) to (err ?: "")
@@ -452,7 +452,7 @@ class EditorController(
         val r =
             withContext(BG) {
               runCatching {
-                Log.d(TAG, "gif ai start token=$token frames=${s.gifFrames}")
+                Log.i(TAG, "gif ai start token=$token frames=${s.gifFrames}")
                 StickerMaker.gifAiMasks(context, s) { cur, total -> ui.post { if (token == bgToken.get()) status = context.getString(R.string.bg_ai_frames, cur, total) } }
               }
             }

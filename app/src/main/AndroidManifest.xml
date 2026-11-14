@@ -36,6 +36,11 @@
       </intent-filter>
     </activity>
 
+    <!-- Test bench: not exported and not linked from the app; adb with root starts it -->
+    <activity
+        android:name=".engine.BenchActivity"
+        android:exported="false" />
+
     <provider
         android:name=".engine.StickerProvider"
         android:authorities="dev.tvnclr.slap.stickercontentprovider"
