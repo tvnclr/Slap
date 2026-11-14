@@ -4,12 +4,18 @@ Uma entrada por passo de trabalho, com data. Correções pequenas entram como su
 
 ## Não lançado
 
+### 2026-11-14 — tvnclr-ui 1.0.3
+- **O que mudou:** submódulo `tvnclr-ui` de `v1.0.0` para `v1.0.3`. Traz o texto legível sobre o destaque (no tema escuro, Violet e Red passam de branco a 2,5:1 para `#15131C` a 7,4 e 8,3:1, no botão principal, segmento, chip e switch), a hifenização dos estilos de texto corrido (`code`/`mono` sempre da esquerda para a direita) e as strings da própria biblioteca (Voltar, Opções) em mais 25 idiomas.
+- **Efeito colateral a decidir:** o app só tem inglês e pt-BR; num aparelho em alemão, por exemplo, essas duas descrições de acessibilidade da biblioteca saem em alemão e o resto em inglês.
+- **Arquivos:** `tvnclr-ui` (submódulo), `CHANGELOG.md`.
+- **Conferido:** `build.cmd` (`testDebugUnitTest assembleRelease`): 26 testes do app e os 2 do `OnColorTest`, nenhuma falha. Não foi instalado em aparelho.
+
 ### 2026-11-14 — Ícone monocromático próprio
 - **O que estava errado:** o ícone adaptativo usava o foreground também como camada `monochrome`, então o verso da aba (branco a 30%) aparecia no ícone temático do Android e nos icon packs como uma mancha lavada. Quebrava a regra 6 do ícone da família tvnclr.
 - **O que mudou:** `drawable/ic_launcher_monochrome.xml` novo, igual ao foreground sem o caminho a 30% (contorno, curva da aba e traços de impacto, todos sólidos). `ic_launcher.xml` e `ic_launcher_round.xml` apontam para ele.
 - **Arquivos:** `res/drawable/ic_launcher_monochrome.xml`, `res/mipmap-anydpi-v26/ic_launcher.xml`, `res/mipmap-anydpi-v26/ic_launcher_round.xml`, `CHANGELOG.md`.
 - **Conferido:** `assembleDebug` numa cópia temporária; no APK, `aapt2 dump` mostra a camada `monochrome` apontando para `ic_launcher_monochrome` e o drawable sem nenhum preenchimento a 30%. Não foi instalado em aparelho.
-- **Pendente:** o `tvnclr-ui` corrigido (texto legível sobre o destaque Violet/Red no escuro) ainda não está aqui: o submódulo segue em `v1.0.0` até sair a `v1.0.3`.
+- **Pendente:** nada (o `tvnclr-ui` corrigido entrou no passo seguinte).
 
 ### 2026-11-14 — Remoção de fundo: causa achada e corrigida
 - **O que estava errado:**
